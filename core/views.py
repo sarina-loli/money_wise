@@ -64,28 +64,59 @@ def dashboard(request):
 def about(request):
     return render(request, 'core/about.html')
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def contact(request):
     if request.method == "POST":
         name = request.POST.get("name")
         email = request.POST.get("email")
         subject = request.POST.get("subject", "")
         message = request.POST.get("message")
-        contact = ContactMessage.objects.create(
-            name=name,email=email,subject=subject,message=message,)
-        send_mail(
-            subject=f"New Contact Message from {name}",
-            message=f"""
+
+        ContactMessage.objects.create(
+            name=name,
+            email=email,
+            subject=subject,
+            message=message,
+        )
+
+        try:
+            send_mail(
+                subject=f"New Contact Message from {name}",
+                message=f"""
 Name: {name}
+
 Email: {email}
+
 Subject: {subject}
+
 Message:
+
 {message}
 """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[settings.CONTACT_EMAIL],fail_silently=False,)
-        messages.success(
-            request,"Your message has been sent successfully!")
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[settings.CONTACT_EMAIL],
+                fail_silently=False,
+            )
+
+            messages.success(
+                request,
+                "Your message has been sent successfully!"
+            )
+
+        except Exception:
+            logger.exception("Email sending failed")
+            messages.error(
+                request,
+                "Your message was saved, but the email could not be sent."
+            )
+            raise
+
         return redirect("core:contact")
+
     return render(request, "core/contact.html")
 
 def privacy_policy(request):
