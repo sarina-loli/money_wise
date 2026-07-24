@@ -3,7 +3,7 @@ Django settings for the Personal Money Management System.
 """
 from pathlib import Path
 import os
-
+import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -83,14 +83,9 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # DATABASE
 # -------------------------------------------------------------------------
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'money_management',
-        'USER': 'root',
-        'PASSWORD': 'loli123,sara',
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
-    }
+    "default": dj_database_url.config(
+        default=os.environ.get("DATABASE_URL")
+    )
 }
 # For production (PostgreSQL), set these environment variables and swap the
 # ENGINE to 'django.db.backends.postgresql':
