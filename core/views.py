@@ -69,28 +69,53 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+from django.conf import settings
+from django.contrib import messages
+from django.core.mail import send_mail
+from django.shortcuts import redirect, render
+
 def contact(request):
     if request.method == "POST":
         name = request.POST.get("name")
         email = request.POST.get("email")
         subject = request.POST.get("subject", "")
         message = request.POST.get("message")
-        contact = ContactMessage.objects.create(
-            name=name,email=email,subject=subject,message=message,)
-        send_mail(
-            subject=f"New Contact Message from {name}",
-            message=f"""
+
+        ContactMessage.objects.create(
+            name=name,
+            email=email,
+            subject=subject,
+            message=message,
+        )
+
+        try:
+            result = send_mail(
+                subject=f"New Contact Message from {name}",
+                message=f"""
 Name: {name}
 Email: {email}
 Subject: {subject}
+
 Message:
 {message}
 """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[settings.CONTACT_EMAIL],fail_silently=False,)
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[settings.CONTACT_EMAIL],
+                fail_silently=False,
+            )
+
+            print("EMAIL SENT:", result)
+
+        except Exception as e:
+            print("EMAIL ERROR:", repr(e))
+            raise
+
         messages.success(
-            request,"Your message has been sent successfully!")
+            request,
+            "Your message has been sent successfully!"
+        )
         return redirect("core:contact")
+
     return render(request, "core/contact.html")
 def privacy_policy(request):
     return render(request, 'core/privacy.html')
