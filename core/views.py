@@ -1,6 +1,10 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.contrib import messages
+from django.core.mail import send_mail
+from django.conf import settings
 
+from .models import ContactMessage
 
 def landing(request):
     """Public marketing landing page."""
@@ -60,14 +64,29 @@ def dashboard(request):
 def about(request):
     return render(request, 'core/about.html')
 
-
 def contact(request):
-    if request.method == 'POST':
-        from django.contrib import messages
-        messages.success(request, "Thanks for reaching out — we'll get back to you within one business day.")
-        return redirect('core:contact')
-    return render(request, 'core/contact.html')
-
+    if request.method == "POST":
+        name = request.POST.get("name")
+        email = request.POST.get("email")
+        subject = request.POST.get("subject", "")
+        message = request.POST.get("message")
+        contact = ContactMessage.objects.create(
+            name=name,email=email,subject=subject,message=message,)
+        send_mail(
+            subject=f"New Contact Message from {name}",
+            message=f"""
+Name: {name}
+Email: {email}
+Subject: {subject}
+Message:
+{message}
+""",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[settings.CONTACT_EMAIL],fail_silently=False,)
+        messages.success(
+            request,"Your message has been sent successfully!")
+        return redirect("core:contact")
+    return render(request, "core/contact.html")
 
 def privacy_policy(request):
     return render(request, 'core/privacy.html')
