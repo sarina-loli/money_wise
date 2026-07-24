@@ -1,0 +1,219 @@
+{% extends "app_base.html" %}
+{% block title %}Dashboard — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block page_content %}
+
+<div class="stat-cards-grid">
+    <div class="glass-card stat-mini reveal-up">
+        <div class="stat-mini-icon icon-balance">💰</div>
+        <div>
+            <span class="stat-mini-label">Total Balance</span>
+            <div class="stat-mini-value">{{ currency_symbol }}{{ total_balance|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="glass-card stat-mini reveal-up delay-1">
+        <div class="stat-mini-icon icon-income">📈</div>
+        <div>
+            <span class="stat-mini-label">This Month's Income</span>
+            <div class="stat-mini-value text-success">{{ currency_symbol }}{{ month_income|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="glass-card stat-mini reveal-up delay-2">
+        <div class="stat-mini-icon icon-expense">📉</div>
+        <div>
+            <span class="stat-mini-label">This Month's Expenses</span>
+            <div class="stat-mini-value text-danger">{{ currency_symbol }}{{ month_expense|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="glass-card stat-mini reveal-up delay-3">
+        <div class="stat-mini-icon icon-budget">🎯</div>
+        <div>
+            <span class="stat-mini-label">Remaining Budget</span>
+            <div class="stat-mini-value">{{ currency_symbol }}{{ remaining_budget|floatformat:2 }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="panel-card reveal-up">
+        <div class="panel-head">
+            <h3>Income vs. Expense</h3>
+            <span class="panel-sub">Last 6 months</span>
+        </div>
+        <canvas id="trendChart" height="110"></canvas>
+    </div>
+
+    <div class="panel-card reveal-up delay-1">
+        <div class="panel-head">
+            <h3>Financial Health</h3>
+        </div>
+        <div class="health-score-wrap">
+            <canvas id="healthChart" width="140" height="140"></canvas>
+            <div class="health-score-number">{{ health_score }}</div>
+        </div>
+        <p class="health-caption">
+            {% if health_score >= 80 %}You're in great shape this month.
+            {% elif health_score >= 50 %}Doing okay — watch your top categories.
+            {% else %}Spending is running high relative to budget.{% endif %}
+        </p>
+    </div>
+
+    <div class="panel-card reveal-up delay-2">
+        <div class="panel-head">
+            <h3>Spending by Category</h3>
+            <span class="panel-sub">This month</span>
+        </div>
+        {% if category_labels|length > 2 %}
+        <canvas id="categoryChart" height="200"></canvas>
+        {% else %}
+        <p class="empty-hint">Add a few expenses this month to see your breakdown.</p>
+        {% endif %}
+    </div>
+
+    <div class="panel-card reveal-up delay-3">
+        <div class="panel-head">
+            <h3>Budget Overview</h3>
+            <a href="{% url 'finance:budget_list' %}" class="panel-link">Manage</a>
+        </div>
+        {% if budgets %}
+            {% for b in budgets %}
+            <div class="budget-row">
+                <div class="budget-row-top">
+                    <span>{{ b.get_category_display }}</span>
+                    <span>{{ currency_symbol }}{{ b.spent|floatformat:0 }} / {{ currency_symbol }}{{ b.monthly_limit|floatformat:0 }}</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill status-{{ b.status }}" style="--pct:{{ b.percent_used }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <p class="empty-hint">No budgets set for this month yet.</p>
+        <a href="{% url 'finance:budget_create' %}" class="btn btn-outline btn-sm">Create a Budget</a>
+        {% endif %}
+    </div>
+
+    <div class="panel-card reveal-up delay-4">
+        <div class="panel-head">
+            <h3>Savings Goals</h3>
+            <a href="{% url 'finance:savings_list' %}" class="panel-link">View all</a>
+        </div>
+        {% if savings_goals %}
+            {% for g in savings_goals %}
+            <div class="goal-row">
+                <div class="budget-row-top">
+                    <span>{{ g.icon }} {{ g.name }}</span>
+                    <span>{{ g.percent_complete }}%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill status-ok" style="--pct:{{ g.percent_complete }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <p class="empty-hint">No savings goals yet.</p>
+        <a href="{% url 'finance:savings_create' %}" class="btn btn-outline btn-sm">Create a Goal</a>
+        {% endif %}
+    </div>
+
+    <div class="panel-card reveal-up delay-5">
+        <div class="panel-head">
+            <h3>Recent Transactions</h3>
+            <a href="{% url 'finance:transactions' %}" class="panel-link">View all</a>
+        </div>
+        {% if recent_transactions %}
+        <ul class="txn-list">
+            {% for t in recent_transactions %}
+            <li class="txn-row">
+                <span class="txn-icon {% if t.kind == 'expense' %}txn-icon-expense{% else %}txn-icon-income{% endif %}">
+                    {% if t.kind == 'expense' %}↓{% else %}↑{% endif %}
+                </span>
+                <div class="txn-info">
+                    <strong>{{ t.obj.get_category_display }}</strong>
+                    <small>{{ t.obj.description|default:"—" }} · {{ t.obj.date }}</small>
+                </div>
+                <span class="txn-amount {% if t.kind == 'expense' %}text-danger{% else %}text-success{% endif %}">
+                    {% if t.kind == 'expense' %}-{% else %}+{% endif %}{{ currency_symbol }}{{ t.obj.amount|floatformat:2 }}
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-hint">No transactions yet — add your first income or expense.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const styles = getComputedStyle(document.documentElement);
+    const primary = styles.getPropertyValue('--primary').trim();
+    const accent = styles.getPropertyValue('--accent').trim();
+    const success = styles.getPropertyValue('--success').trim();
+    const danger = styles.getPropertyValue('--danger').trim();
+    const textMuted = styles.getPropertyValue('--text-muted').trim();
+
+    // Trend chart
+    const trendCtx = document.getElementById('trendChart');
+    if (trendCtx) {
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: {{ trend_months|safe }},
+                datasets: [
+                    { label: 'Income', data: {{ trend_income|safe }}, borderColor: success, backgroundColor: 'transparent', tension: .4, pointRadius: 3 },
+                    { label: 'Expense', data: {{ trend_expense|safe }}, borderColor: danger, backgroundColor: 'transparent', tension: .4, pointRadius: 3 }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: textMuted } } },
+                scales: {
+                    x: { ticks: { color: textMuted }, grid: { display: false } },
+                    y: { ticks: { color: textMuted }, grid: { color: 'rgba(128,128,128,.12)' } }
+                }
+            }
+        });
+    }
+
+    // Category pie chart
+    const catCtx = document.getElementById('categoryChart');
+    if (catCtx) {
+        new Chart(catCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ category_labels|safe }},
+                datasets: [{
+                    data: {{ category_values|safe }},
+                    backgroundColor: [primary, accent, success, danger, '#FB8C00', '#8E24AA', '#3949AB', '#00897B', '#C0CA33', '#6D4C41', '#546E7A'],
+                    borderWidth: 2, borderColor: styles.getPropertyValue('--surface').trim()
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: textMuted, boxWidth: 12 } } } }
+        });
+    }
+
+    // Health score ring
+    const healthCtx = document.getElementById('healthChart');
+    if (healthCtx) {
+        const score = {{ health_score }};
+        new Chart(healthCtx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [score, 100 - score],
+                    backgroundColor: [score >= 80 ? success : score >= 50 ? '#FB8C00' : danger, 'rgba(128,128,128,.12)'],
+                    borderWidth: 0
+                }]
+            },
+            options: { cutout: '78%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+        });
+    }
+});
+</script>
+{% endblock %}

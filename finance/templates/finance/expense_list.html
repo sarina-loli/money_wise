@@ -1,0 +1,49 @@
+{% extends "app_base.html" %}
+{% block title %}Expenses — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Expenses{% endblock %}
+
+{% block page_content %}
+<div class="list-toolbar reveal-up">
+    <form method="get" class="toolbar-filters">
+        <input type="text" name="q" class="form-input" placeholder="Search description..." value="{{ query }}">
+        <select name="category" class="form-input">
+            <option value="">All Categories</option>
+            {% for value, label in categories %}
+            <option value="{{ value }}" {% if category == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-outline btn-sm">Filter</button>
+    </form>
+    <a href="{% url 'finance:expense_create' %}" class="btn btn-primary btn-ripple">+ Add Expense</a>
+</div>
+
+<div class="total-banner reveal-up">Total: <strong class="text-danger">{{ currency_symbol }}{{ total|floatformat:2 }}</strong></div>
+
+<div class="table-card reveal-up delay-1">
+    {% if page_obj %}
+    <table class="data-table">
+        <thead>
+            <tr><th>Date</th><th>Category</th><th>Description</th><th>Receipt</th><th>Amount</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for item in page_obj %}
+            <tr>
+                <td>{{ item.date }}</td>
+                <td><span class="cat-pill">{{ item.get_category_display }}</span></td>
+                <td>{{ item.description|default:"—" }}</td>
+                <td>{% if item.receipt %}<a href="{{ item.receipt.url }}" target="_blank" class="link-muted">View</a>{% else %}—{% endif %}</td>
+                <td class="text-danger">-{{ currency_symbol }}{{ item.amount|floatformat:2 }}</td>
+                <td class="row-actions">
+                    <a href="{% url 'finance:expense_update' item.pk %}" class="icon-link" title="Edit">✏️</a>
+                    <a href="{% url 'finance:expense_delete' item.pk %}" class="icon-link icon-danger" title="Delete">🗑️</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% include "finance/_pagination.html" %}
+    {% else %}
+    <p class="empty-hint">No expenses recorded yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

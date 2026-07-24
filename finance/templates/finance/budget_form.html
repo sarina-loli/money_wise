@@ -1,0 +1,45 @@
+{% extends "app_base.html" %}
+{% block title %}{% if is_edit %}Edit Budget{% else %}Add Budget{% endif %} — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}{% if is_edit %}Edit Budget{% else %}Add Budget{% endif %}{% endblock %}
+
+{% block page_content %}
+<div class="form-card reveal-up">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-error-box shake">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div class="form-group">
+            <label>Category</label>
+            {{ form.category }}
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Monthly Limit</label>
+                {{ form.monthly_limit }}
+                {% if form.monthly_limit.errors %}<span class="field-error">{{ form.monthly_limit.errors|join:", " }}</span>{% endif %}
+            </div>
+            <div class="form-group">
+                <label>Month</label>
+                {{ form.month }}
+            </div>
+        </div>
+
+        {% if can_share and not is_edit %}
+        <div class="settings-toggle-row">
+            <div>
+                <label class="checkbox-label">
+                    <input type="checkbox" name="share_with_household" class="form-input">
+                    <span>Share with my household</span>
+                </label>
+                <small class="empty-hint">Everyone in your household will see this budget, and spending from all members counts toward it.</small>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <a href="{% url 'finance:budget_list' %}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-ripple">{% if is_edit %}Save Changes{% else %}Create Budget{% endif %}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

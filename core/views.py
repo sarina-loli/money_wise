@@ -1,0 +1,92 @@
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect, render
+
+
+def landing(request):
+    """Public marketing landing page."""
+    stats = [
+        {'value': 25000, 'suffix': '+', 'label': 'Active Users'},
+        {'value': 120, 'suffix': 'M+', 'label': 'Tracked in Transactions'},
+        {'value': 98, 'suffix': '%', 'label': 'Satisfaction Rate'},
+        {'value': 4.9, 'suffix': '/5', 'label': 'Average Rating'},
+    ]
+    features = [
+        {'icon': '💳', 'title': 'Expense Tracking', 'desc': 'Log and categorize every expense in seconds with smart auto-categorization.'},
+        {'icon': '📊', 'title': 'Visual Reports', 'desc': 'Beautiful, animated charts that turn raw numbers into real insight.'},
+        {'icon': '🎯', 'title': 'Savings Goals', 'desc': 'Set targets and watch your progress bar fill up as you save.'},
+        {'icon': '🔔', 'title': 'Smart Alerts', 'desc': 'Get notified before you overspend, not after.'},
+        {'icon': '🧾', 'title': 'Budget Planning', 'desc': 'Build monthly budgets by category and track them in real time.'},
+        {'icon': '🔒', 'title': 'Bank-Grade Security', 'desc': 'Your data is encrypted and protected at every layer.'},
+    ]
+    steps = [
+        {'step': '01', 'title': 'Create your account', 'desc': 'Sign up in under a minute — no credit card required.'},
+        {'step': '02', 'title': 'Connect your finances', 'desc': 'Add income, expenses, and set your first budget.'},
+        {'step': '03', 'title': 'Track & grow', 'desc': 'Watch insights roll in and hit your savings goals faster.'},
+    ]
+    pricing = [
+        {'slug': 'free', 'name': 'Free', 'price': '0', 'period': 'forever', 'features': ['Track unlimited transactions', 'Basic reports', '1 savings goal', 'Email support'], 'highlighted': False},
+        {'slug': 'pro', 'name': 'Pro', 'price': '9', 'period': 'month', 'trial_note': 'First month free', 'features': ['Everything in Free', 'Advanced analytics', 'Unlimited savings goals', 'PDF/Excel export', 'Priority support'], 'highlighted': True},
+        {'slug': 'family', 'name': 'Family', 'price': '19', 'period': 'month', 'trial_note': 'First month free', 'features': ['Everything in Pro', 'Up to 5 members', 'Shared budgets', 'Dedicated support'], 'highlighted': False},
+    ]
+    testimonials = [
+        {'name': 'Amara T.', 'role': 'Freelance Designer', 'quote': 'MoneyWise is the first budgeting app I have actually stuck with for more than a month.'},
+        {'name': 'Daniel K.', 'role': 'Software Engineer', 'quote': 'The savings goal tracker and alerts changed how I think about spending.'},
+        {'name': 'Priya S.', 'role': 'Small Business Owner', 'quote': 'Clean, fast, and genuinely beautiful. It feels like a premium banking app.'},
+    ]
+    faqs = [
+        {'q': 'Is MoneyWise free to use?', 'a': 'Yes, our Free plan lets you track unlimited transactions and manage one savings goal at no cost.'},
+        {'q': 'Is my financial data secure?', 'a': 'All data is encrypted in transit and at rest, with industry-standard authentication and CSRF protection.'},
+        {'q': 'Can I export my reports?', 'a': 'Pro and Family plans support PDF and Excel export for daily, weekly, monthly, and yearly reports.'},
+        {'q': 'Can I cancel anytime?', 'a': 'Absolutely — there are no long-term contracts. Cancel or downgrade whenever you like.'},
+    ]
+    context = {
+        'stats': stats,
+        'features': features,
+        'steps': steps,
+        'pricing': pricing,
+        'testimonials': testimonials,
+        'faqs': faqs,
+    }
+    return render(request, 'core/landing.html', context)
+
+
+@login_required
+def dashboard(request):
+    """Legacy URL kept for compatibility — the real dashboard now lives
+    in the finance app."""
+    return redirect('finance:dashboard')
+
+
+def about(request):
+    return render(request, 'core/about.html')
+
+
+def contact(request):
+    if request.method == 'POST':
+        from django.contrib import messages
+        messages.success(request, "Thanks for reaching out — we'll get back to you within one business day.")
+        return redirect('core:contact')
+    return render(request, 'core/contact.html')
+
+
+def privacy_policy(request):
+    return render(request, 'core/privacy.html')
+
+
+def terms(request):
+    return render(request, 'core/terms.html')
+
+
+def help_center(request):
+    faqs = [
+        {'q': 'How do I add my first transaction?', 'a': 'From your dashboard, use the Quick Add button or go to Income/Expenses and click "Add".'},
+        {'q': 'How do budgets work?', 'a': 'Set a monthly limit per category. MoneyWise tracks your spending against it and warns you at 80% and 100%.'},
+        {'q': 'Can I export my data?', 'a': 'Yes — go to Reports and use "Export CSV" (opens in Excel/Sheets) or "Export PDF" (print to PDF).'},
+        {'q': 'How do savings goals work?', 'a': 'Create a goal with a target amount, then use "Add Funds" any time you set money aside.'},
+        {'q': 'Is my data private?', 'a': 'Yes — every record is scoped to your account only. See our Privacy Policy for details.'},
+    ]
+    return render(request, 'core/help_center.html', {'faqs': faqs})
+
+
+def error_404(request, exception=None):
+    return render(request, '404.html', status=404)

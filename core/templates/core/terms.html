@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Terms of Service — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<section class="section container-narrow container">
+    <div class="section-head reveal-up" style="text-align:left; margin-bottom:30px;">
+        <span class="eyebrow">Legal</span>
+        <h2>Terms of Service</h2>
+        <p>Last updated {% now "F Y" %}</p>
+    </div>
+    <div class="reveal-up delay-1" style="display:flex; flex-direction:column; gap:20px;">
+        <div>
+            <h3 style="margin-bottom:8px;">Using {{ SITE_NAME }}</h3>
+            <p>By creating an account, you agree to use {{ SITE_NAME }} for personal financial tracking purposes and to keep your login credentials secure.</p>
+        </div>
+        <div>
+            <h3 style="margin-bottom:8px;">Your data</h3>
+            <p>You retain ownership of all financial data you enter. We store it to provide the service and back it up responsibly.</p>
+        </div>
+        <div>
+            <h3 style="margin-bottom:8px;">No financial advice</h3>
+            <p>{{ SITE_NAME }} is a tracking and planning tool, not a licensed financial advisor. Insights and health scores are informational only.</p>
+        </div>
+        <div>
+            <h3 style="margin-bottom:8px;">Cancellation</h3>
+            <p>You may delete your account at any time from Settings; this permanently removes your data from our systems.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

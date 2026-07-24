@@ -1,0 +1,45 @@
+{% extends "app_base.html" %}
+{% block title %}{% if is_edit %}Edit Goal{% else %}New Savings Goal{% endif %} — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}{% if is_edit %}Edit Goal{% else %}New Savings Goal{% endif %}{% endblock %}
+
+{% block page_content %}
+<div class="form-card reveal-up">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-error-box shake">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Goal Name</label>
+                {{ form.name }}
+            </div>
+            <div class="form-group">
+                <label>Icon (emoji)</label>
+                {{ form.icon }}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Target Amount</label>
+                {{ form.target_amount }}
+                {% if form.target_amount.errors %}<span class="field-error">{{ form.target_amount.errors|join:", " }}</span>{% endif %}
+            </div>
+            <div class="form-group">
+                <label>Already Saved</label>
+                {{ form.saved_amount }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Deadline (optional)</label>
+            {{ form.deadline }}
+        </div>
+
+        <div class="form-actions">
+            <a href="{% url 'finance:savings_list' %}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-ripple">{% if is_edit %}Save Changes{% else %}Create Goal{% endif %}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

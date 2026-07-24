@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<section class="hero">
+    <div class="hero-bg-gradient"></div>
+    <div class="container hero-inner">
+        <div class="hero-text reveal-up">
+            <span class="badge badge-accent">✨ Now with smart spending insights</span>
+            <h1 class="hero-heading">
+                Take control of your
+                <span class="typing-text" id="typingText"></span>
+            </h1>
+            <p class="hero-sub">
+                Track income, plan budgets, and hit your savings goals — all in one beautifully
+                designed dashboard built to feel as premium as your bank.
+            </p>
+            <div class="hero-actions">
+                <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg btn-ripple btn-glow">Start Free — No Card Needed</a>
+                <a href="#how-it-works" class="btn btn-outline btn-lg">See How It Works</a>
+            </div>
+            <div class="hero-trust">
+                <span>🔒 Bank-grade security</span>
+                <span>⚡ Free forever plan</span>
+            </div>
+        </div>
+
+        <div class="hero-visual reveal-up delay-2">
+            <div class="floating-card card-main">
+                <div class="fc-header">
+                    <span>Current Balance</span>
+                    <span class="fc-dot"></span>
+                </div>
+                <div class="fc-balance">$<span class="counter" data-target="12480">0</span>.00</div>
+                <div class="fc-chart">
+                    <div class="bar" style="--h:40%"></div>
+                    <div class="bar" style="--h:65%"></div>
+                    <div class="bar" style="--h:35%"></div>
+                    <div class="bar" style="--h:80%"></div>
+                    <div class="bar" style="--h:55%"></div>
+                    <div class="bar" style="--h:90%"></div>
+                    <div class="bar" style="--h:70%"></div>
+                </div>
+            </div>
+            <div class="floating-card card-small card-income">
+                <span>📈 Income</span>
+                <strong>+$4,250</strong>
+            </div>
+            <div class="floating-card card-small card-goal">
+                <span>🎯 Vacation Fund</span>
+                <div class="mini-progress"><div class="mini-progress-fill" style="width:72%"></div></div>
+                <small>72% complete</small>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="stats-section">
+    <div class="container stats-grid">
+        {% for stat in stats %}
+        <div class="stat-card reveal-up delay-{{ forloop.counter }}">
+            <div class="stat-value"><span class="counter" data-target="{{ stat.value }}">0</span>{{ stat.suffix }}</div>
+            <div class="stat-label">{{ stat.label }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section" id="features">
+    <div class="container">
+        <div class="section-head reveal-up">
+            <span class="eyebrow">Features</span>
+            <h2>Everything you need to master your money</h2>
+            <p>Powerful tools wrapped in an interface you'll actually enjoy using.</p>
+        </div>
+        <div class="feature-grid">
+            {% for f in features %}
+            <div class="feature-card reveal-up delay-{{ forloop.counter }}">
+                <div class="feature-icon">{{ f.icon }}</div>
+                <h3>{{ f.title }}</h3>
+                <p>{{ f.desc }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section section-alt" id="how-it-works">
+    <div class="container">
+        <div class="section-head reveal-up">
+            <span class="eyebrow">How It Works</span>
+            <h2>Three steps to financial clarity</h2>
+        </div>
+        <div class="steps-grid">
+            {% for s in steps %}
+            <div class="step-card reveal-up delay-{{ forloop.counter }}">
+                <div class="step-number">{{ s.step }}</div>
+                <h3>{{ s.title }}</h3>
+                <p>{{ s.desc }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section" id="testimonials">
+    <div class="container">
+        <div class="section-head reveal-up">
+            <span class="eyebrow">Testimonials</span>
+            <h2>Loved by people who take money seriously</h2>
+        </div>
+        <div class="testimonial-grid">
+            {% for t in testimonials %}
+            <div class="testimonial-card reveal-up delay-{{ forloop.counter }}">
+                <p>&ldquo;{{ t.quote }}&rdquo;</p>
+                <div class="testimonial-author">
+                    <div class="avatar-circle">{{ t.name|first }}</div>
+                    <div>
+                        <strong>{{ t.name }}</strong>
+                        <small>{{ t.role }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section section-alt" id="pricing">
+    <div class="container">
+        <div class="section-head reveal-up">
+            <span class="eyebrow">Pricing</span>
+            <h2>Simple plans that grow with you</h2>
+        </div>
+        <div class="pricing-grid">
+            {% for p in pricing %}
+            <div class="pricing-card reveal-up delay-{{ forloop.counter }} {% if p.highlighted %}pricing-featured{% endif %}">
+                {% if p.highlighted %}<span class="pricing-badge">Most Popular</span>{% endif %}
+                <h3>{{ p.name }}</h3>
+                <div class="pricing-price">${{ p.price }}<small>/{{ p.period }}</small></div>
+                {% if p.trial_note %}<div class="status-tag status-tag-ok" style="margin-bottom:0.75rem;">{{ p.trial_note }}</div>{% endif %}
+                <ul class="pricing-features">
+                    {% for feat in p.features %}
+                    <li>✓ {{ feat }}</li>
+                    {% endfor %}
+                </ul>
+                {% if p.slug == 'free' %}
+                <a href="{% if request.user.is_authenticated %}{% url 'finance:dashboard' %}{% else %}{% url 'accounts:register' %}{% endif %}" class="btn btn-outline btn-block btn-ripple">
+                    {% if request.user.is_authenticated and request.user.profile.plan == 'free' %}Current Plan{% else %}Choose Free{% endif %}
+                </a>
+                {% elif request.user.is_authenticated %}
+                {% if request.user.profile.plan == p.slug and request.user.profile.has_active_subscription %}
+                <button type="button" class="btn btn-outline btn-block" disabled>Current Plan</button>
+                {% else %}
+                <form method="post" action="{% url 'billing:checkout' p.slug %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn {% if p.highlighted %}btn-primary{% else %}btn-outline{% endif %} btn-block btn-ripple">Choose {{ p.name }}</button>
+                </form>
+                {% endif %}
+                {% else %}
+                <a href="{% url 'accounts:register' %}?next=pricing" class="btn {% if p.highlighted %}btn-primary{% else %}btn-outline{% endif %} btn-block btn-ripple">Choose {{ p.name }}</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section" id="faq">
+    <div class="container container-narrow">
+        <div class="section-head reveal-up">
+            <span class="eyebrow">FAQ</span>
+            <h2>Frequently asked questions</h2>
+        </div>
+        <div class="accordion" id="faqAccordion">
+            {% for item in faqs %}
+            <div class="accordion-item reveal-up delay-{{ forloop.counter }}">
+                <button class="accordion-trigger" type="button">
+                    <span>{{ item.q }}</span>
+                    <span class="accordion-icon">+</span>
+                </button>
+                <div class="accordion-panel">
+                    <p>{{ item.a }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section newsletter-section">
+    <div class="container newsletter-inner reveal-up">
+        <h2>Get monthly money tips in your inbox</h2>
+        <p>No spam — just genuinely useful budgeting insights.</p>
+        <form class="newsletter-form" onsubmit="return false;">
+            <input type="email" class="form-input" placeholder="you@example.com" required>
+            <button type="submit" class="btn btn-primary btn-ripple">Subscribe</button>
+        </form>
+    </div>
+</section>
+
+<button class="fab" id="scrollTopFab" aria-label="Scroll to top">↑</button>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.MW_TYPING_WORDS = ["finances.", "budget.", "savings.", "future."];
+</script>
+{% endblock %}

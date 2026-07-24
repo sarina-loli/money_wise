@@ -1,0 +1,42 @@
+{% extends "app_base.html" %}
+{% block title %}Notifications — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block page_content %}
+<div class="list-toolbar reveal-up">
+    <p class="empty-hint">Budget warnings, goal milestones, and reminders land here.</p>
+    {% if notifications %}
+    <form method="post" action="{% url 'finance:notifications_mark_all_read' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline btn-sm">Mark all as read</button>
+    </form>
+    {% endif %}
+</div>
+
+{% if notifications %}
+<div class="notif-list reveal-up delay-1">
+    {% for n in notifications %}
+    <div class="notif-item {% if not n.is_read %}notif-unread{% endif %}">
+        <span class="notif-icon">{{ n.icon }}</span>
+        <div class="notif-body">
+            <strong>{{ n.title }}</strong>
+            <p>{{ n.message }}</p>
+            <small>{{ n.created_at|timesince }} ago</small>
+        </div>
+        {% if not n.is_read %}
+        <form method="post" action="{% url 'finance:notification_mark_read' n.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-ghost btn-sm">Mark read</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state reveal-up">
+    <span class="empty-icon">🔔</span>
+    <h3>You're all caught up</h3>
+    <p>Budget warnings and goal milestones will show up here.</p>
+</div>
+{% endif %}
+{% endblock %}

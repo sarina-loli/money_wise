@@ -1,0 +1,74 @@
+{% extends "app_base.html" %}
+{% block title %}Settings — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block page_content %}
+<div class="form-card reveal-up">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label>Theme</label>
+            {{ form.theme }}
+            <small class="empty-hint">The floating toggle in the navbar also switches this instantly.</small>
+        </div>
+
+        <div class="form-group">
+            <label>Currency</label>
+            {{ form.currency }}
+        </div>
+
+        <div class="settings-toggle-row">
+            <div>
+                <label class="checkbox-label">
+                    {{ form.email_notifications }}
+                    <span>Email Notifications</span>
+                </label>
+                <small class="empty-hint">Budget alerts and monthly summaries by email.</small>
+            </div>
+        </div>
+
+        <div class="settings-toggle-row">
+            <div>
+                <label class="checkbox-label">
+                    {{ form.reminder_notifications }}
+                    <span>Reminder Notifications</span>
+                </label>
+                <small class="empty-hint">Upcoming bill and goal-deadline reminders.</small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-ripple">Save Settings</button>
+        </div>
+    </form>
+</div>
+
+<div class="form-card reveal-up delay-1">
+    <h3>Plan &amp; Billing</h3>
+    <p class="empty-hint">
+        Current plan: <strong>{{ user.profile.get_plan_display }}</strong>
+        {% if user.profile.subscription_status == 'trialing' %}
+            <span class="status-tag status-tag-ok">Free trial</span> — first charge on {{ user.profile.current_period_end|date:"M j, Y" }}
+        {% elif user.profile.has_active_subscription %}
+            (renews {{ user.profile.current_period_end|date:"M j, Y" }})
+        {% elif user.profile.plan != 'free' %}
+            <span class="text-danger">— subscription {{ user.profile.subscription_status|default:"inactive" }}</span>
+        {% endif %}
+    </p>
+    {% if user.profile.plan == 'free' %}
+    <a href="{% url 'core:landing' %}#pricing" class="btn btn-outline">View Plans</a>
+    {% else %}
+    <form method="post" action="{% url 'billing:portal' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline">Manage Subscription</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="form-card reveal-up delay-2">
+    <h3>Security</h3>
+    <p class="empty-hint">Change your password to keep your account secure.</p>
+    <a href="{% url 'accounts:password_reset' %}" class="btn btn-outline">Change Password</a>
+</div>
+{% endblock %}

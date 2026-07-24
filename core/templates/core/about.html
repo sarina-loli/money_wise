@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}About — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<section class="section container-narrow container">
+    <div class="section-head reveal-up" style="text-align:left; margin-bottom:30px;">
+        <span class="eyebrow">About Us</span>
+        <h2>Building the money app we always wanted</h2>
+    </div>
+    <div class="reveal-up delay-1" style="display:flex; flex-direction:column; gap:16px;">
+        <p>{{ SITE_NAME }} started with a simple frustration: every budgeting app either looked like a spreadsheet or cost more than a streaming subscription. We wanted something that felt as premium as a private bank app, but was honest, simple, and free to start.</p>
+        <p>Today, {{ SITE_NAME }} helps people track income and expenses, plan realistic budgets, and actually hit their savings goals — without the anxiety spiral that usually comes with looking at your finances.</p>
+        <p>We're a small, independent team obsessed with two things: clarity and craft. Every animation, chart, and progress bar in this app exists to make your money easier to understand at a glance.</p>
+    </div>
+</section>
+{% endblock %}

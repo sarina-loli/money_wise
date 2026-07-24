@@ -1,0 +1,48 @@
+{% extends "app_base.html" %}
+{% block title %}Budgets — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Budgets · {{ today|date:"F Y" }}{% endblock %}
+
+{% block page_content %}
+<div class="list-toolbar reveal-up">
+    <p class="empty-hint">Set monthly limits per category and track spending in real time.</p>
+    <a href="{% url 'finance:budget_create' %}" class="btn btn-primary btn-ripple">+ Add Budget</a>
+</div>
+
+{% if budgets %}
+<div class="budget-cards-grid">
+    {% for b in budgets %}
+    <div class="glass-card budget-card reveal-up delay-{{ forloop.counter }}">
+        <div class="budget-card-top">
+            <h3>{{ b.get_category_display }}{% if b.household_id %} <span class="status-tag status-tag-ok">👪 Shared{% if b.user != request.user %} by {{ b.user.first_name|default:b.user.username }}{% endif %}</span>{% endif %}</h3>
+            <div class="row-actions">
+                {% if b.user == request.user %}
+                <a href="{% url 'finance:budget_update' b.pk %}" class="icon-link" title="Edit">✏️</a>
+                <a href="{% url 'finance:budget_delete' b.pk %}" class="icon-link icon-danger" title="Delete">🗑️</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="budget-amounts">
+            <span>{{ currency_symbol }}{{ b.spent|floatformat:2 }} spent</span>
+            <span>{{ currency_symbol }}{{ b.monthly_limit|floatformat:2 }} limit</span>
+        </div>
+        <div class="progress-track progress-track-lg">
+            <div class="progress-fill status-{{ b.status }}" style="--pct:{{ b.percent_used }}%"></div>
+        </div>
+        <div class="budget-card-footer">
+            <span class="status-tag status-tag-{{ b.status }}">
+                {% if b.status == 'exceeded' %}Over Budget{% elif b.status == 'warning' %}Near Limit{% else %}On Track{% endif %}
+            </span>
+            <span>{{ b.percent_used }}% used</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state reveal-up">
+    <span class="empty-icon">📊</span>
+    <h3>No budgets yet</h3>
+    <p>Create your first monthly budget to start tracking overspending.</p>
+    <a href="{% url 'finance:budget_create' %}" class="btn btn-primary btn-ripple">+ Add Budget</a>
+</div>
+{% endif %}
+{% endblock %}

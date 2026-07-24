@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Create Account — {{ SITE_NAME }}{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-visual reveal-left">
+        <div class="auth-visual-content">
+            <span class="brand-mark brand-mark-lg">M</span>
+            <h2>Start your financial glow-up</h2>
+            <p>Join thousands of users tracking income, expenses, and savings in one premium dashboard.</p>
+            <ul class="visual-checklist">
+                <li>✓ Free forever plan</li>
+                <li>✓ No credit card required</li>
+                <li>✓ Set up in under a minute</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="auth-form-wrap reveal-right">
+        <div class="auth-card">
+            <h1>Create Your Account</h1>
+            <p class="auth-subtitle">It only takes a minute to get started.</p>
+
+            <form method="post" class="auth-form" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="form-error-box shake">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.first_name.id_for_label }}">First Name</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}<span class="field-error">{{ form.first_name.errors|join:", " }}</span>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.last_name.id_for_label }}">Last Name</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}<span class="field-error">{{ form.last_name.errors|join:", " }}</span>{% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}">Username</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}<span class="field-error">{{ form.username.errors|join:", " }}</span>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.email.id_for_label }}">Email</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<span class="field-error">{{ form.email.errors|join:", " }}</span>{% endif %}
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.password1.id_for_label }}">Password</label>
+                        {{ form.password1 }}
+                        {% if form.password1.errors %}<span class="field-error">{{ form.password1.errors|join:", " }}</span>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.password2.id_for_label }}">Confirm Password</label>
+                        {{ form.password2 }}
+                        {% if form.password2.errors %}<span class="field-error">{{ form.password2.errors|join:", " }}</span>{% endif %}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg btn-ripple">Create Account</button>
+            </form>
+
+            <p class="auth-switch">Already have an account? <a href="{% url 'accounts:login' %}">Log in</a></p>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<section class="section container-narrow container">
+    <div class="section-head reveal-up" style="text-align:left; margin-bottom:30px;">
+        <span class="eyebrow">Legal</span>
+        <h2>Privacy Policy</h2>
+        <p>Last updated {% now "F Y" %}</p>
+    </div>
+    <div class="reveal-up delay-1" style="display:flex; flex-direction:column; gap:20px;">
+        <div>
+            <h3 style="margin-bottom:8px;">What we collect</h3>
+            <p>We collect the account details you provide (name, email) and the financial data you enter (income, expenses, budgets, savings goals). We never access your bank accounts directly — all data is entered manually by you.</p>
+        </div>
+        <div>
+            <h3 style="margin-bottom:8px;">How we use it</h3>
+            <p>Your data is used solely to power your dashboard, reports, and notifications. We do not sell your data to third parties.</p>
+        </div>
+        <div>
+            <h3 style="margin-bottom:8px;">Security</h3>
+            <p>Passwords are hashed, all forms are CSRF-protected, and every record is scoped to your account only.</p>
+        </div>
+        <div>
+            <h3 style="margin-bottom:8px;">Your rights</h3>
+            <p>You can export or delete your data at any time from your account settings.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

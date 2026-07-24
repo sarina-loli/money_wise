@@ -1,0 +1,117 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{{ SITE_NAME }} — Personal Money Management{% endblock %}</title>
+<meta name="description" content="MoneyWise helps you track income, expenses, budgets, and savings goals — beautifully.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+{% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+<div class="page-loader" id="pageLoader">
+    <div class="loader-mark">
+        <span class="loader-coin"></span>
+    </div>
+</div>
+
+{% block navbar %}
+<nav class="navbar" id="navbar">
+    <div class="navbar-inner container">
+        <a href="{% url 'core:landing' %}" class="brand">
+            <span class="brand-mark">M</span>
+            <span class="brand-name">{{ SITE_NAME }}</span>
+        </a>
+
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+            <span></span><span></span><span></span>
+        </button>
+
+        <div class="nav-links" id="navLinks">
+            {% if user.is_authenticated %}
+                <a href="{% url 'finance:dashboard' %}" class="nav-link">Dashboard</a>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" type="button">
+                    <span class="theme-icon theme-icon-sun">☀️</span>
+                    <span class="theme-icon theme-icon-moon">🌙</span>
+                </button>
+                <form action="{% url 'accounts:logout' %}" method="post" class="inline-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
+                </form>
+                <div class="nav-avatar" title="{{ user.username }}">{{ user.username|first|upper }}</div>
+            {% else %}
+                <a href="{% url 'core:landing' %}#features" class="nav-link">Features</a>
+                <a href="{% url 'core:landing' %}#pricing" class="nav-link">Pricing</a>
+                <a href="{% url 'core:landing' %}#faq" class="nav-link">FAQ</a>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" type="button">
+                    <span class="theme-icon theme-icon-sun">☀️</span>
+                    <span class="theme-icon theme-icon-moon">🌙</span>
+                </button>
+                <a href="{% url 'accounts:login' %}" class="btn btn-ghost btn-sm">Login</a>
+                <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm btn-ripple">Get Started</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% if messages %}
+<div class="toast-stack" id="toastStack">
+    {% for message in messages %}
+    <div class="toast toast-{{ message.tags }}">
+        <span class="toast-icon">
+            {% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}✕{% else %}ℹ{% endif %}
+        </span>
+        <span class="toast-text">{{ message }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<main class="main-content">
+    {% block content %}{% endblock %}
+</main>
+
+{% block footer %}
+<footer class="footer">
+    <div class="container footer-inner">
+        <div class="footer-brand">
+            <span class="brand-mark">M</span>
+            <span class="brand-name">{{ SITE_NAME }}</span>
+            <p class="footer-tagline">Premium money management, made simple.</p>
+        </div>
+        <div class="footer-links">
+            <div class="footer-col">
+                <h4>Product</h4>
+                <a href="{% url 'core:landing' %}#features">Features</a>
+                <a href="{% url 'core:landing' %}#pricing">Pricing</a>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <a href="{% url 'core:about' %}">About</a>
+                <a href="{% url 'core:contact' %}">Contact</a>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <a href="{% url 'core:privacy' %}">Privacy Policy</a>
+                <a href="{% url 'core:terms' %}">Terms</a>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom container">
+        <p>&copy; {% now "Y" %} {{ SITE_NAME }}. All rights reserved.</p>
+    </div>
+</footer>
+{% endblock %}
+
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

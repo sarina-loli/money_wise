@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Login — {{ SITE_NAME }}{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-visual reveal-left">
+        <div class="auth-visual-content">
+            <span class="brand-mark brand-mark-lg">M</span>
+            <h2>Welcome back to {{ SITE_NAME }}</h2>
+            <p>Pick up right where you left off — your dashboard, budgets, and goals are waiting.</p>
+            <div class="floating-card card-small card-goal auth-floater">
+                <span>🎯 Savings Goal</span>
+                <div class="mini-progress"><div class="mini-progress-fill" style="width:64%"></div></div>
+                <small>64% complete</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-form-wrap reveal-right">
+        <div class="auth-card">
+            <h1>Log In</h1>
+            <p class="auth-subtitle">Enter your details to access your dashboard.</p>
+
+            <form method="post" class="auth-form" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="form-error-box shake">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}">Username or Email</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}<span class="field-error">{{ form.username.errors|join:", " }}</span>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.password.id_for_label }}">Password</label>
+                    {{ form.password }}
+                    {% if form.password.errors %}<span class="field-error">{{ form.password.errors|join:", " }}</span>{% endif %}
+                </div>
+
+                <div class="form-row-between">
+                    <label class="checkbox-label">
+                        {{ form.remember_me }}
+                        <span>Remember me</span>
+                    </label>
+                    <a href="{% url 'accounts:password_reset' %}" class="link-muted">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg btn-ripple">Log In</button>
+            </form>
+
+            <p class="auth-switch">Don't have an account? <a href="{% url 'accounts:register' %}">Sign up free</a></p>
+        </div>
+    </div>
+</section>
+{% endblock %}

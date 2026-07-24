@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load static %}
+{% block body_class %}app-body{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <span class="brand-mark">M</span>
+            <span class="brand-name">{{ SITE_NAME }}</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{% url 'finance:dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <span class="sidebar-icon">🏠</span> Dashboard
+            </a>
+            <a href="{% url 'finance:income_list' %}" class="sidebar-link {% if request.resolver_match.url_name == 'income_list' %}active{% endif %}">
+                <span class="sidebar-icon">💵</span> Income
+            </a>
+            <a href="{% url 'finance:expense_list' %}" class="sidebar-link {% if request.resolver_match.url_name == 'expense_list' %}active{% endif %}">
+                <span class="sidebar-icon">🧾</span> Expenses
+            </a>
+            <a href="{% url 'finance:transactions' %}" class="sidebar-link {% if request.resolver_match.url_name == 'transactions' %}active{% endif %}">
+                <span class="sidebar-icon">🔄</span> Transactions
+            </a>
+            <a href="{% url 'finance:budget_list' %}" class="sidebar-link {% if request.resolver_match.url_name == 'budget_list' %}active{% endif %}">
+                <span class="sidebar-icon">📊</span> Budgets
+            </a>
+            <a href="{% url 'finance:savings_list' %}" class="sidebar-link {% if request.resolver_match.url_name == 'savings_list' %}active{% endif %}">
+                <span class="sidebar-icon">🎯</span> Savings Goals
+            </a>
+            <a href="{% url 'finance:reports' %}" class="sidebar-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+                <span class="sidebar-icon">📈</span> Reports
+            </a>
+            <a href="{% url 'finance:calendar' %}" class="sidebar-link {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}">
+                <span class="sidebar-icon">📅</span> Calendar
+            </a>
+            <a href="{% url 'finance:notifications' %}" class="sidebar-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+                <span class="sidebar-icon">🔔</span> Notifications
+            </a>
+            {% if request.user.profile.is_family or request.user.household_membership %}
+            <a href="{% url 'households:home' %}" class="sidebar-link {% if request.resolver_match.app_name == 'households' %}active{% endif %}">
+                <span class="sidebar-icon">👪</span> Household
+            </a>
+            {% endif %}
+            <div class="sidebar-divider"></div>
+            <a href="{% url 'accounts:profile' %}" class="sidebar-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                <span class="sidebar-icon">👤</span> Profile
+            </a>
+            <a href="{% url 'accounts:settings' %}" class="sidebar-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+                <span class="sidebar-icon">⚙️</span> Settings
+            </a>
+            <a href="{% url 'core:help_center' %}" class="sidebar-link">
+                <span class="sidebar-icon">❓</span> Help Center
+            </a>
+        </nav>
+    </aside>
+
+    <div class="app-main">
+        <div class="app-topbar">
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
+            <h1 class="app-page-title">{% block page_title %}{% endblock %}</h1>
+            <div class="app-topbar-actions">
+                <a href="{% url 'finance:notifications' %}" class="topbar-bell" aria-label="Notifications">
+                    🔔
+                    {% if unread_count %}<span class="bell-dot"></span>{% endif %}
+                </a>
+                <div class="quick-add-wrap">
+                    <button class="fab-inline" id="quickAddBtn" type="button">+ Quick Add</button>
+                    <div class="quick-add-menu" id="quickAddMenu">
+                        <a href="{% url 'finance:income_create' %}">💵 Add Income</a>
+                        <a href="{% url 'finance:expense_create' %}">🧾 Add Expense</a>
+                        <a href="{% url 'finance:budget_create' %}">📊 Add Budget</a>
+                        <a href="{% url 'finance:savings_create' %}">🎯 Add Savings Goal</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="app-content">
+            {% block page_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}

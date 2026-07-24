@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<section class="error-section container">
+    <div class="error-content reveal-up">
+        <h1 class="error-code">404</h1>
+        <h2>Looks like this page overspent its budget.</h2>
+        <p>The page you're looking for doesn't exist or has moved.</p>
+        <a href="{% url 'core:landing' %}" class="btn btn-primary btn-lg btn-ripple">Back to Home</a>
+    </div>
+</section>
+{% endblock %}

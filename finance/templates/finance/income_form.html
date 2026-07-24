@@ -1,0 +1,39 @@
+{% extends "app_base.html" %}
+{% block title %}{% if is_edit %}Edit Income{% else %}Add Income{% endif %} — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}{% if is_edit %}Edit Income{% else %}Add Income{% endif %}{% endblock %}
+
+{% block page_content %}
+<div class="form-card reveal-up">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-error-box shake">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Amount</label>
+                {{ form.amount }}
+                {% if form.amount.errors %}<span class="field-error">{{ form.amount.errors|join:", " }}</span>{% endif %}
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                {{ form.category }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Description</label>
+            {{ form.description }}
+        </div>
+
+        <div class="form-group">
+            <label>Date</label>
+            {{ form.date }}
+        </div>
+
+        <div class="form-actions">
+            <a href="{% url 'finance:income_list' %}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-ripple">{% if is_edit %}Save Changes{% else %}Add Income{% endif %}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "app_base.html" %}
+{% block title %}Reports — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Reports{% endblock %}
+
+{% block page_content %}
+<div class="list-toolbar reveal-up">
+    <div class="period-tabs">
+        <a href="?period=weekly" class="period-tab {% if period == 'weekly' %}active{% endif %}">Weekly</a>
+        <a href="?period=monthly" class="period-tab {% if period == 'monthly' %}active{% endif %}">Monthly</a>
+        <a href="?period=yearly" class="period-tab {% if period == 'yearly' %}active{% endif %}">Yearly</a>
+    </div>
+    <div class="row-actions">
+        <a href="{% url 'finance:export_csv' %}" class="btn btn-outline btn-sm">⬇ Export Excel (CSV)</a>
+        <a href="{% url 'finance:export_pdf' %}" target="_blank" class="btn btn-outline btn-sm">🖨 Export PDF</a>
+    </div>
+</div>
+
+<div class="stat-cards-grid">
+    <div class="glass-card stat-mini reveal-up">
+        <div class="stat-mini-icon icon-income">📈</div>
+        <div><span class="stat-mini-label">Total Income</span><div class="stat-mini-value text-success">{{ currency_symbol }}{{ total_income|floatformat:2 }}</div></div>
+    </div>
+    <div class="glass-card stat-mini reveal-up delay-1">
+        <div class="stat-mini-icon icon-expense">📉</div>
+        <div><span class="stat-mini-label">Total Expenses</span><div class="stat-mini-value text-danger">{{ currency_symbol }}{{ total_expense|floatformat:2 }}</div></div>
+    </div>
+    <div class="glass-card stat-mini reveal-up delay-2">
+        <div class="stat-mini-icon icon-balance">💼</div>
+        <div><span class="stat-mini-label">Net</span><div class="stat-mini-value">{{ currency_symbol }}{{ net|floatformat:2 }}</div></div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="panel-card reveal-up">
+        <div class="panel-head"><h3>Income vs. Expense</h3><span class="panel-sub">{{ start }} – {{ end }}</span></div>
+        <canvas id="reportTrendChart" height="120"></canvas>
+    </div>
+    <div class="panel-card reveal-up delay-1">
+        <div class="panel-head"><h3>Expenses by Category</h3></div>
+        {% if category_labels|length > 2 %}
+        <canvas id="reportCategoryChart" height="200"></canvas>
+        {% else %}
+        <p class="empty-hint">Not enough data for this period yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="table-card reveal-up delay-2">
+    <div class="panel-head"><h3>Transactions in Period</h3></div>
+    <table class="data-table">
+        <thead><tr><th>Type</th><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
+        <tbody>
+            {% for i in incomes %}
+            <tr><td><span class="cat-pill pill-income">Income</span></td><td>{{ i.date }}</td><td>{{ i.get_category_display }}</td><td>{{ i.description|default:"—" }}</td><td class="text-success">+{{ currency_symbol }}{{ i.amount|floatformat:2 }}</td></tr>
+            {% endfor %}
+            {% for e in expenses %}
+            <tr><td><span class="cat-pill pill-expense">Expense</span></td><td>{{ e.date }}</td><td>{{ e.get_category_display }}</td><td>{{ e.description|default:"—" }}</td><td class="text-danger">-{{ currency_symbol }}{{ e.amount|floatformat:2 }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const styles = getComputedStyle(document.documentElement);
+    const primary = styles.getPropertyValue('--primary').trim();
+    const accent = styles.getPropertyValue('--accent').trim();
+    const success = styles.getPropertyValue('--success').trim();
+    const danger = styles.getPropertyValue('--danger').trim();
+    const textMuted = styles.getPropertyValue('--text-muted').trim();
+
+    const trendCtx = document.getElementById('reportTrendChart');
+    if (trendCtx) {
+        new Chart(trendCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ labels|safe }},
+                datasets: [
+                    { label: 'Income', data: {{ income_series|safe }}, backgroundColor: success },
+                    { label: 'Expense', data: {{ expense_series|safe }}, backgroundColor: danger }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: textMuted } } },
+                scales: {
+                    x: { ticks: { color: textMuted }, grid: { display: false } },
+                    y: { ticks: { color: textMuted }, grid: { color: 'rgba(128,128,128,.12)' } }
+                }
+            }
+        });
+    }
+
+    const catCtx = document.getElementById('reportCategoryChart');
+    if (catCtx) {
+        new Chart(catCtx, {
+            type: 'pie',
+            data: {
+                labels: {{ category_labels|safe }},
+                datasets: [{
+                    data: {{ category_values|safe }},
+                    backgroundColor: [primary, accent, success, danger, '#FB8C00', '#8E24AA', '#3949AB', '#00897B', '#C0CA33', '#6D4C41', '#546E7A']
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: textMuted, boxWidth: 12 } } } }
+        });
+    }
+});
+</script>
+{% endblock %}

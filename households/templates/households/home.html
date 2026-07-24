@@ -1,0 +1,104 @@
+{% extends "app_base.html" %}
+{% block title %}Household — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Household{% endblock %}
+
+{% block page_content %}
+{% if not household %}
+    {% if request.user.profile.is_family %}
+    <div class="form-card reveal-up">
+        <h3>Create your household</h3>
+        <p class="empty-hint">Invite up to 5 people to share budgets with — everyone keeps their own income, expenses, and savings goals private.</p>
+        <form method="post" action="{% url 'households:create' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Household name</label>
+                <input type="text" name="name" class="form-input" placeholder="e.g. The Bekele Family">
+            </div>
+            <button type="submit" class="btn btn-primary btn-ripple">Create Household</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="empty-state reveal-up">
+        <span class="empty-icon">👪</span>
+        <h3>Household sharing is a Family-plan feature</h3>
+        <p>Upgrade to Family to create a household and share budgets with up to 5 people.</p>
+        <a href="{% url 'core:landing' %}#pricing" class="btn btn-primary btn-ripple">View Plans</a>
+    </div>
+    {% endif %}
+{% else %}
+
+<div class="form-card reveal-up">
+    <h3>{{ household.name }}</h3>
+    <p class="empty-hint">{{ household.member_count }} of {{ household.MAX_MEMBERS }} members</p>
+
+    <table class="data-table">
+        <thead><tr><th>Member</th><th>Role</th><th>Joined</th>{% if is_owner %}<th></th>{% endif %}</tr></thead>
+        <tbody>
+        {% for m in members %}
+            <tr>
+                <td>{{ m.user.get_full_name|default:m.user.username }}</td>
+                <td>{{ m.get_role_display }}</td>
+                <td>{{ m.joined_at|date:"M j, Y" }}</td>
+                {% if is_owner %}
+                <td>
+                    {% if m.role != 'owner' %}
+                    <form method="post" action="{% url 'households:remove_member' m.user.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="icon-link icon-danger" title="Remove">🗑️</button>
+                    </form>
+                    {% endif %}
+                </td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if is_owner %}
+<div class="form-card reveal-up delay-1">
+    <h3>Invite someone</h3>
+    {% if not request.user.profile.is_family %}
+    <p class="empty-hint text-danger">Your Family subscription looks inactive, so invites are paused. Check Settings → Plan &amp; Billing.</p>
+    {% elif household.can_add_member %}
+    <form method="post" action="{% url 'households:invite' %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Email address</label>
+            <input type="email" name="email" class="form-input" placeholder="them@example.com" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-ripple">Send Invite</button>
+    </form>
+    {% else %}
+    <p class="empty-hint">This household is at the {{ household.MAX_MEMBERS }}-member limit.</p>
+    {% endif %}
+
+    {% if pending_invites %}
+    <h4 style="margin-top:1.5rem;">Pending invites</h4>
+    <ul>
+        {% for inv in pending_invites %}
+        <li>{{ inv.email }} — sent {{ inv.created_at|date:"M j, Y" }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+
+<div class="form-card reveal-up delay-2">
+    <h3>Disband household</h3>
+    <p class="empty-hint">Removes everyone and unshares all shared budgets. This can't be undone.</p>
+    <form method="post" action="{% url 'households:disband' %}" onsubmit="return confirm('Disband this household for everyone?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline">Disband Household</button>
+    </form>
+</div>
+{% else %}
+<div class="form-card reveal-up delay-1">
+    <form method="post" action="{% url 'households:leave' %}" onsubmit="return confirm('Leave this household?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline">Leave Household</button>
+    </form>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

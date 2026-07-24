@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MoneyWise Statement — {{ generated }}</title>
+<style>
+  body{ font-family: Arial, sans-serif; color:#263238; padding:32px; }
+  h1{ margin-bottom:4px; } .muted{ color:#607D8B; margin-bottom:24px; }
+  table{ width:100%; border-collapse:collapse; margin-bottom:30px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid #CFD8DC; font-size:13px; }
+  th{ background:#ECEFF1; }
+  .totals{ display:flex; gap:40px; margin-bottom:24px; }
+  .totals div{ font-size:14px; }
+  .totals strong{ font-size:18px; display:block; }
+  .income{ color:#4CAF50; } .expense{ color:#E53935; }
+  @media print { .no-print{ display:none; } }
+</style>
+</head>
+<body>
+<button class="no-print" onclick="window.print()" style="margin-bottom:20px;padding:8px 16px;">Print / Save as PDF</button>
+<h1>MoneyWise Financial Statement</h1>
+<p class="muted">Generated {{ generated }}</p>
+
+<div class="totals">
+    <div>Total Income<strong class="income">{{ currency_symbol }}{{ total_income|floatformat:2 }}</strong></div>
+    <div>Total Expenses<strong class="expense">{{ currency_symbol }}{{ total_expense|floatformat:2 }}</strong></div>
+</div>
+
+<h3>Income</h3>
+<table>
+    <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
+    <tbody>
+        {% for i in incomes %}
+        <tr><td>{{ i.date }}</td><td>{{ i.get_category_display }}</td><td>{{ i.description|default:"—" }}</td><td>{{ currency_symbol }}{{ i.amount|floatformat:2 }}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3>Expenses</h3>
+<table>
+    <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
+    <tbody>
+        {% for e in expenses %}
+        <tr><td>{{ e.date }}</td><td>{{ e.get_category_display }}</td><td>{{ e.description|default:"—" }}</td><td>{{ currency_symbol }}{{ e.amount|floatformat:2 }}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</body>
+</html>

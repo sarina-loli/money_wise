@@ -1,0 +1,36 @@
+{% extends "app_base.html" %}
+{% block title %}Calendar — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Calendar{% endblock %}
+
+{% block page_content %}
+<div class="list-toolbar reveal-up">
+    <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-outline btn-sm">&larr; Prev</a>
+    <h3 class="calendar-title">{{ month_name }} {{ year }}</h3>
+    <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-outline btn-sm">Next &rarr;</a>
+</div>
+
+<div class="calendar-card reveal-up delay-1">
+    <div class="calendar-grid calendar-head-row">
+        <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+    </div>
+    {% for week in weeks %}
+    <div class="calendar-grid">
+        {% for day in week %}
+            {% if day == 0 %}
+            <div class="calendar-cell calendar-cell-empty"></div>
+            {% else %}
+            <div class="calendar-cell {% if day == today.day and month == today.month and year == today.year %}calendar-today{% endif %}">
+                <span class="calendar-day-num">{{ day }}</span>
+                {% for d, t in day_totals.items %}
+                    {% if d == day %}
+                        {% if t.income %}<span class="cal-amount cal-income">+{{ currency_symbol }}{{ t.income|floatformat:0 }}</span>{% endif %}
+                        {% if t.expense %}<span class="cal-amount cal-expense">-{{ currency_symbol }}{{ t.expense|floatformat:0 }}</span>{% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

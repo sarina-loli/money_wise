@@ -1,0 +1,55 @@
+{% extends "app_base.html" %}
+{% block title %}Savings Goals — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Savings Goals{% endblock %}
+
+{% block page_content %}
+<div class="list-toolbar reveal-up">
+    <p class="empty-hint">Set targets and watch your progress grow.</p>
+    <a href="{% url 'finance:savings_create' %}" class="btn btn-primary btn-ripple">+ New Goal</a>
+</div>
+
+{% if goals %}
+<div class="budget-cards-grid">
+    {% for g in goals %}
+    <div class="glass-card goal-card reveal-up delay-{{ forloop.counter }} {% if g.is_completed %}goal-complete{% endif %}">
+        <div class="budget-card-top">
+            <h3>{{ g.icon }} {{ g.name }}</h3>
+            <div class="row-actions">
+                <a href="{% url 'finance:savings_update' g.pk %}" class="icon-link" title="Edit">✏️</a>
+                <a href="{% url 'finance:savings_delete' g.pk %}" class="icon-link icon-danger" title="Delete">🗑️</a>
+            </div>
+        </div>
+        <div class="budget-amounts">
+            <span>{{ currency_symbol }}{{ g.saved_amount|floatformat:2 }} saved</span>
+            <span>{{ currency_symbol }}{{ g.target_amount|floatformat:2 }} goal</span>
+        </div>
+        <div class="progress-track progress-track-lg">
+            <div class="progress-fill status-ok" style="--pct:{{ g.percent_complete }}%"></div>
+        </div>
+        <div class="budget-card-footer">
+            {% if g.is_completed %}
+                <span class="status-tag status-tag-ok">🎉 Goal Reached</span>
+            {% else %}
+                <span>{{ g.percent_complete }}% complete</span>
+            {% endif %}
+            {% if g.deadline %}<span>Due {{ g.deadline }}</span>{% endif %}
+        </div>
+        {% if not g.is_completed %}
+        <form method="post" action="{% url 'finance:savings_add_funds' g.pk %}" class="add-funds-form">
+            {% csrf_token %}
+            {{ add_funds_form.amount }}
+            <button type="submit" class="btn btn-outline btn-sm">Add Funds</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state reveal-up">
+    <span class="empty-icon">🎯</span>
+    <h3>No savings goals yet</h3>
+    <p>Create a goal — vacation, emergency fund, new laptop — and track it here.</p>
+    <a href="{% url 'finance:savings_create' %}" class="btn btn-primary btn-ripple">+ New Goal</a>
+</div>
+{% endif %}
+{% endblock %}

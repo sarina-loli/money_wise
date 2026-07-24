@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Help Center — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<section class="section container-narrow container">
+    <div class="section-head reveal-up" style="text-align:left; margin-bottom:30px;">
+        <span class="eyebrow">Help Center</span>
+        <h2>How can we help?</h2>
+    </div>
+    <div class="accordion reveal-up delay-1">
+        {% for item in faqs %}
+        <div class="accordion-item">
+            <button class="accordion-trigger" type="button">
+                <span>{{ item.q }}</span>
+                <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-panel">
+                <p>{{ item.a }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <p class="empty-hint reveal-up delay-2" style="margin-top:20px;">Still stuck? <a href="{% url 'core:contact' %}" class="link-muted">Contact us</a>.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "app_base.html" %}
+{% block title %}Confirm Delete — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Confirm Delete{% endblock %}
+
+{% block page_content %}
+<div class="form-card reveal-up form-card-narrow">
+    <div class="confirm-icon">⚠️</div>
+    <h2>Delete this {{ type_label }}?</h2>
+    <p class="confirm-detail">
+        {% if object.amount %}{{ currency_symbol }}{{ object.amount|floatformat:2 }}{% endif %}
+        {% if object.get_category_display %} · {{ object.get_category_display }}{% endif %}
+        {% if object.name %}{{ object.name }}{% endif %}
+    </p>
+    <p class="empty-hint">This action cannot be undone.</p>
+    <form method="post" class="form-actions form-actions-center">
+        {% csrf_token %}
+        <a href="{{ object.get_absolute_url }}" class="btn btn-ghost">Cancel</a>
+        <button type="submit" class="btn btn-danger btn-ripple">Yes, Delete</button>
+    </form>
+</div>
+{% endblock %}
