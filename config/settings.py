@@ -20,9 +20,13 @@ SECRET_KEY = os.environ.get(
     'dev-only-secret-key-CHANGE-THIS-IN-PRODUCTION-1234567890'
 )
 
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+ALLOWED_HOSTS = os.environ.get(
+    "DJANGO_ALLOWED_HOSTS",
+    "127.0.0.1,localhost",
+    "money-wise-aa1n.onrender.com"
+).split(",")
 
 # -------------------------------------------------------------------------
 # APPLICATIONS
