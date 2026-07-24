@@ -80,42 +80,22 @@ def contact(request):
         email = request.POST.get("email")
         subject = request.POST.get("subject", "")
         message = request.POST.get("message")
-
-        ContactMessage.objects.create(
-            name=name,
-            email=email,
-            subject=subject,
-            message=message,
-        )
-
-        try:
-            result = send_mail(
-                subject=f"New Contact Message from {name}",
-                message=f"""
+        contact = ContactMessage.objects.create(
+            name=name,email=email,subject=subject,message=message,)
+        send_mail(
+            subject=f"New Contact Message from {name}",
+            message=f"""
 Name: {name}
 Email: {email}
 Subject: {subject}
-
 Message:
 {message}
 """,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[settings.CONTACT_EMAIL],
-                fail_silently=False,
-            )
-
-            print("EMAIL SENT:", result)
-
-        except Exception as e:
-            print("EMAIL ERROR:", repr(e))
-            raise
-
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[settings.CONTACT_EMAIL],fail_silently=False,)
         messages.success(
-            request,
-            "Your message has been sent successfully!"
-        )
+            request,"Your message has been sent successfully!")
         return redirect("core:contact")
-
     return render(request, "core/contact.html")
 def privacy_policy(request):
     return render(request, 'core/privacy.html')
