@@ -162,14 +162,7 @@ SITE_NAME = 'MoneyWise'
 SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-EMAIL_HOST = "smtp.gmail.com"
 
-EMAIL_PORT = 587
+CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL")
 
-EMAIL_USE_TLS = True
-
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 EMAIL_TIMEOUT = 30

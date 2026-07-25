@@ -3,6 +3,8 @@ from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
+import os
+import resend
 
 from .models import ContactMessage
 
@@ -74,28 +76,54 @@ from django.contrib import messages
 from django.core.mail import send_mail
 from django.shortcuts import redirect, render
 
+import os
+import resend
+
+from django.conf import settings
+from django.contrib import messages
+from django.shortcuts import redirect, render
+
+from .models import ContactMessage
+
+resend.api_key = os.environ["RESEND_API_KEY"]
+
+
 def contact(request):
     if request.method == "POST":
         name = request.POST.get("name")
         email = request.POST.get("email")
         subject = request.POST.get("subject", "")
         message = request.POST.get("message")
-        contact = ContactMessage.objects.create(
-            name=name,email=email,subject=subject,message=message,)
-        send_mail(
-            subject=f"New Contact Message from {name}",
-            message=f"""
+
+        # Save to database
+        ContactMessage.objects.create(
+            name=name,
+            email=email,
+            subject=subject,
+            message=message,
+        )
+
+        # Send email using Resend
+        resend.Emails.send({
+            "from": "onboarding@resend.dev",   # Replace with your verified sender
+            "to": [settings.CONTACT_EMAIL],
+            "subject": f"New Contact Message from {name}",
+            "text": f"""
 Name: {name}
 Email: {email}
 Subject: {subject}
+
 Message:
 {message}
 """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[settings.CONTACT_EMAIL],fail_silently=False,)
+        })
+
         messages.success(
-            request,"Your message has been sent successfully!")
+            request,
+            "Your message has been sent successfully!"
+        )
         return redirect("core:contact")
+
     return render(request, "core/contact.html")
 def privacy_policy(request):
     return render(request, 'core/privacy.html')
