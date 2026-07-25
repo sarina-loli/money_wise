@@ -105,7 +105,7 @@ def contact(request):
 
         # Send email using Resend
         resend.Emails.send({
-            "from": "MoneyWise <contact@moneywise.com>",   # Replace with your verified sender
+             "from": "onboarding@resend.dev",   # Replace with your verified sender
             "to": [settings.CONTACT_EMAIL],
             "subject": f"New Contact Message from {name}",
             "text": f"""
