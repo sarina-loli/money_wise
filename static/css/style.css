@@ -173,6 +173,13 @@ img{ max-width:100%; display:block; }
 .btn-ghost:hover{ background:var(--secondary); }
 .btn-danger{ background:var(--danger); color:#fff; box-shadow:var(--shadow-sm); }
 .btn-danger:hover{ background:#C62828; transform:translateY(-2px); }
+.btn.is-loading{ cursor:progress; opacity:.85; }
+.btn.is-loading::after{
+  content:''; width:16px; height:16px; margin-left:8px; flex-shrink:0;
+  border:2px solid currentColor; border-right-color:transparent; border-radius:50%;
+  animation:btn-spin .6s linear infinite;
+}
+@keyframes btn-spin{ to{ transform:rotate(360deg); } }
 .checkbox-input{ width:18px; height:18px; accent-color:var(--accent); cursor:pointer; }
 .btn-glow{ animation:glow 2.4s ease-in-out infinite; }
 @keyframes glow{

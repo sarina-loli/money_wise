@@ -69,6 +69,58 @@ real SMTP in production.
 - **Export PDF** opens a clean, print-ready statement page; use the
   browser's "Print → Save as PDF" to generate a PDF file.
 
+### Testing payments (PayPal Sandbox)
+
+Payments for the Pro/Family plans go through PayPal (`billing/paypal.py`,
+`billing/views.py`). To test the full checkout → capture → webhook flow
+locally:
+
+1. **Create sandbox credentials.**
+   - Log in at https://developer.paypal.com/dashboard/ (a free developer
+     account is enough — no real business account needed).
+   - Under **Apps & Credentials**, make sure you're on the **Sandbox**
+     tab, then **Create App**. Copy the **Client ID** and **Secret**.
+   - Under **Sandbox → Accounts**, PayPal auto-creates a test *business*
+     account (this represents your app) and a test *personal* account
+     (this is the "buyer" you'll log in as during checkout). You can view/
+     reset the buyer's password from there — you'll need it to log in on
+     PayPal's sandbox checkout page.
+
+2. **Fill in `.env`** (copy from `.env.example` if you don't have one yet):
+   ```
+   PAYPAL_MODE=sandbox
+   PAYPAL_CLIENT_ID=<your sandbox client id>
+   PAYPAL_CLIENT_SECRET=<your sandbox secret>
+   PAYPAL_WEBHOOK_ID=<see step 3>
+   ```
+
+3. **Set up the webhook** (optional for local testing, required before
+   going live). PayPal's servers can't reach `127.0.0.1`, so for local
+   testing either skip this — the return-URL flow alone (step 4) is enough
+   to complete a payment — or expose your dev server with a tunnel (e.g.
+   `ngrok http 8000`) and:
+   - In your sandbox app, click **Add Webhook**, point it at
+     `https://<your-tunnel-domain>/billing/webhook/paypal/`, and subscribe
+     to at least **Checkout order approved** and **Payment capture
+     completed**.
+   - Copy the generated **Webhook ID** into `PAYPAL_WEBHOOK_ID` in `.env`.
+
+4. **Run through a checkout.**
+   - `python manage.py runserver`, log into the app, and click **Subscribe**
+     on the Pro or Family plan (landing page pricing section).
+   - You'll be redirected to PayPal's sandbox checkout. Log in with the
+     sandbox **personal/buyer** account's email + password from step 1,
+     then approve the payment.
+   - PayPal redirects you back to `billing:payment_return`, which captures
+     the order server-to-server and shows the success page. Check
+     **Payment History** (`/billing/history/`) or `/admin/` to see the
+     `Payment` row, including the raw PayPal responses.
+   - To test a cancelled/failed payment, back out of the sandbox checkout
+     page instead of approving — you'll land on the failed-payment page.
+
+No real money ever moves in sandbox mode — only PayPal sandbox test
+accounts can complete a "payment" against sandbox credentials.
+
 ### Switching to PostgreSQL for production
 
 Uncomment `psycopg2-binary` in `requirements.txt` and swap the

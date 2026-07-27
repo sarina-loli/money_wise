@@ -17,7 +17,7 @@
                 designed dashboard built to feel as premium as your bank.
             </p>
             <div class="hero-actions">
-                <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg btn-ripple btn-glow">Start Free — No Card Needed</a>
+                <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg btn-ripple btn-glow">Get Started</a>
                 <a href="#how-it-works" class="btn btn-outline btn-lg">See How It Works</a>
             </div>
             <div class="hero-trust">
@@ -139,7 +139,6 @@
                 {% if p.highlighted %}<span class="pricing-badge">Most Popular</span>{% endif %}
                 <h3>{{ p.name }}</h3>
                 <div class="pricing-price">${{ p.price }}<small>/{{ p.period }}</small></div>
-                {% if p.trial_note %}<div class="status-tag status-tag-ok" style="margin-bottom:0.75rem;">{{ p.trial_note }}</div>{% endif %}
                 <ul class="pricing-features">
                     {% for feat in p.features %}
                     <li>✓ {{ feat }}</li>
@@ -153,9 +152,11 @@
                 {% if request.user.profile.plan == p.slug and request.user.profile.has_active_subscription %}
                 <button type="button" class="btn btn-outline btn-block" disabled>Current Plan</button>
                 {% else %}
-                <form method="post" action="{% url 'billing:checkout' p.slug %}">
+                <form method="post" action="{% url 'billing:checkout' p.slug %}" class="checkout-form">
                     {% csrf_token %}
-                    <button type="submit" class="btn {% if p.highlighted %}btn-primary{% else %}btn-outline{% endif %} btn-block btn-ripple">Choose {{ p.name }}</button>
+                    <button type="submit" class="btn {% if p.highlighted %}btn-primary{% else %}btn-outline{% endif %} btn-block btn-ripple">
+                        <span class="btn-label">Choose {{ p.name }}</span>
+                    </button>
                 </form>
                 {% endif %}
                 {% else %}

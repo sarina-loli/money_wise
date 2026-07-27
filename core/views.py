@@ -31,8 +31,8 @@ def landing(request):
     ]
     pricing = [
         {'slug': 'free', 'name': 'Free', 'price': '0', 'period': 'forever', 'features': ['Track unlimited transactions', 'Basic reports', '1 savings goal', 'Email support'], 'highlighted': False},
-        {'slug': 'pro', 'name': 'Pro', 'price': '9', 'period': 'month', 'trial_note': 'First month free', 'features': ['Everything in Free', 'Advanced analytics', 'Unlimited savings goals', 'PDF/Excel export', 'Priority support'], 'highlighted': True},
-        {'slug': 'family', 'name': 'Family', 'price': '19', 'period': 'month', 'trial_note': 'First month free', 'features': ['Everything in Pro', 'Up to 5 members', 'Shared budgets', 'Dedicated support'], 'highlighted': False},
+        {'slug': 'pro', 'name': 'Pro', 'price': '9', 'period': 'month', 'features': ['Everything in Free', 'Advanced analytics', 'Unlimited savings goals', 'PDF/Excel export', 'Priority support'], 'highlighted': True},
+        {'slug': 'family', 'name': 'Family', 'price': '19', 'period': 'month', 'features': ['Everything in Pro', 'Up to 5 members', 'Shared budgets', 'Dedicated support'], 'highlighted': False},
     ]
     testimonials = [
         {'name': 'Amara T.', 'role': 'Freelance Designer', 'quote': 'MoneyWise is the first budgeting app I have actually stuck with for more than a month.'},

@@ -1,0 +1,44 @@
+{% extends "app_base.html" %}
+{% block title %}Payment Successful — {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Payment Successful{% endblock %}
+
+{% block page_content %}
+<div class="form-card form-card-narrow reveal-up" style="text-align:center;">
+    <div style="font-size:3rem; line-height:1; margin-bottom:12px;">✅</div>
+    <h2 style="margin-bottom:8px;">You're on the {{ payment.get_plan_display }} plan!</h2>
+    <p class="empty-hint" style="margin-bottom:20px;">
+        Your payment of {{ payment.amount }} {{ payment.currency }} was completed successfully via PayPal.
+    </p>
+
+    <div class="table-card" style="text-align:left; margin-bottom:24px;">
+        <table class="table">
+            <tbody>
+                <tr>
+                    <td><strong>Plan</strong></td>
+                    <td>{{ payment.get_plan_display }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Amount</strong></td>
+                    <td>{{ payment.amount }} {{ payment.currency }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Transaction Ref</strong></td>
+                    <td><code>{{ payment.tx_ref }}</code></td>
+                </tr>
+                {% if payment.paypal_capture_id %}
+                <tr>
+                    <td><strong>PayPal Reference</strong></td>
+                    <td><code>{{ payment.paypal_capture_id }}</code></td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td><strong>Status</strong></td>
+                    <td><span class="status-tag status-tag-ok">Success</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{% url 'finance:dashboard' %}" class="btn btn-primary btn-block btn-ripple">Go to Dashboard</a>
+</div>
+{% endblock %}

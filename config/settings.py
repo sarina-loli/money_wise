@@ -153,16 +153,74 @@ DEFAULT_FROM_EMAIL = 'MoneyWise <no-reply@moneywise.app>'
 SITE_NAME = 'MoneyWise'
 
 # -------------------------------------------------------------------------
-# BILLING
+# BILLING — PayPal (SANDBOX/TEST MODE)
 # -------------------------------------------------------------------------
-# No payment processor is wired up in this build. "Checking out" just
-# starts a local free trial (see billing/views.py and billing/plans.py) —
-# no card is collected and nothing is ever charged. Plug a real provider
-# back in here when you're ready to accept payments.
+# Payments are processed by PayPal (https://developer.paypal.com). See
+# billing/paypal.py for the API client and billing/views.py for the
+# checkout/capture/webhook flow. PAYPAL_CLIENT_ID/SECRET come from a
+# sandbox app at https://developer.paypal.com/dashboard/applications/sandbox
+# — sandbox credentials automatically put every transaction in test mode,
+# so no real money moves and only PayPal sandbox "buyer" test accounts can
+# pay with them.
+#
+# PAYPAL_WEBHOOK_ID comes from that same app's Webhooks section, once a
+# webhook is registered pointing at /billing/webhook/paypal/. PayPal signs
+# webhook requests so we can verify (server-to-server) that they really
+# came from PayPal.
 SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
+PAYPAL_MODE = os.environ.get('PAYPAL_MODE', 'sandbox')
+PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', '')
+PAYPAL_CLIENT_SECRET = os.environ.get('PAYPAL_CLIENT_SECRET', '')
+PAYPAL_WEBHOOK_ID = os.environ.get('PAYPAL_WEBHOOK_ID', '')
 
 CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL")
 
 EMAIL_TIMEOUT = 30
+
+# -------------------------------------------------------------------------
+# LOGGING
+# -------------------------------------------------------------------------
+# All billing/payment activity (PayPal API calls, webhook events, checkout
+# errors) is logged through the 'billing' logger below. In development
+# this prints straight to the console running `manage.py runserver`. In
+# production, point the 'console' handler's output at your platform's log
+# aggregator (most hosts, e.g. Render/Heroku, capture stdout automatically).
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'billing': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+
+PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID")
+PAYPAL_CLIENT_SECRET = os.getenv("PAYPAL_CLIENT_SECRET")
+PAYPAL_MODE = os.getenv("PAYPAL_MODE", "sandbox")

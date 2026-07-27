@@ -154,6 +154,22 @@ document.addEventListener('DOMContentLoaded', () => {
     type();
   }
 
+  /* ---------- Checkout loading indicator (Chapa payment) ---------- */
+  // The checkout form does a full server-side redirect to Chapa's hosted
+  // page once we've called their API, which takes a moment. Give the user
+  // immediate feedback so the button doesn't look unresponsive, and guard
+  // against double-submits creating two pending Payment rows.
+  document.querySelectorAll('.checkout-form').forEach((form) => {
+    form.addEventListener('submit', function () {
+      const btn = form.querySelector('button[type="submit"]');
+      if (!btn || btn.disabled) return;
+      btn.disabled = true;
+      btn.classList.add('is-loading');
+      const label = btn.querySelector('.btn-label');
+      if (label) label.textContent = 'Redirecting to Chapa…';
+    });
+  });
+
   /* ---------- Button Ripple Effect ---------- */
   document.querySelectorAll('.btn-ripple').forEach((btn) => {
     btn.addEventListener('click', function (e) {
