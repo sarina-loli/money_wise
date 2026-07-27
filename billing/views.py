@@ -409,3 +409,13 @@ def payment_cancel(request):
         request,
         "billing/payment_cancel.html"
     )
+from django.conf import settings
+
+def payment(request):
+    return render(
+        request,
+        "billing/payment.html",
+        {
+            "paypal_client_id": settings.PAYPAL_CLIENT_ID,
+        },
+    )

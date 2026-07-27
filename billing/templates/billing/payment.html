@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+    <h2>Upgrade to Premium</h2>
+
+    <p>$10.00</p>
+
+    <div id="paypal-button-container"></div>
+
+</div>
+
+{% endblock %}
+{% block extra_js %}
+
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD"></script>
+
+<script>
+
+paypal.Buttons({
+
+    createOrder: function(data, actions) {
+
+        return fetch("{% url 'billing:create_order' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            }
+        })
+        .then(response => response.json())
+        .then(data => data.id);
+
+    },
+
+    onApprove: function(data, actions) {
+
+        return fetch("/billing/capture-order/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({
+                orderID: data.orderID
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            window.location.href="/billing/payment-success/";
+        });
+
+    },
+
+    onCancel: function() {
+
+        window.location.href="/billing/payment-cancel/";
+
+    }
+
+}).render("#paypal-button-container");
+
+</script>
+
+{% endblock %}
