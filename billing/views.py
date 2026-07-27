@@ -1,6 +1,5 @@
 import json
 import logging
-
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -16,7 +15,11 @@ from django.views.decorators.http import require_GET, require_POST
 from . import paypal
 from .models import Payment
 from .plans import PLAN_NAMES, PLAN_PRICES_USD
-
+from billing.paypal_service import PayPalService
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+import json
 logger = logging.getLogger(__name__)
 
 
@@ -377,3 +380,32 @@ def billing_portal(request):
     profile.save(update_fields=['plan', 'subscription_status', 'current_period_end'])
     messages.info(request, 'Your plan is back to Free.')
     return redirect('accounts:settings')
+
+@login_required
+@require_POST
+def create_paypal_order(request):
+    data = json.loads(request.body)
+    amount = data.get("amount")
+    response = PayPalService.create_order(amount)
+    return JsonResponse(response)
+
+@login_required
+@require_POST
+def capture_paypal_order(request):
+    data = json.loads(request.body)
+    order_id = data.get("orderID")
+    result = PayPalService.capture_order(order_id)
+    return JsonResponse(result)
+
+@login_required
+def payment_success(request):
+    return render(
+        request,
+        "billing/payment_success.html"
+    )
+@login_required
+def payment_cancel(request):
+    return render(
+        request,
+        "billing/payment_cancel.html"
+    )

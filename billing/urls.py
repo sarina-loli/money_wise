@@ -18,4 +18,27 @@ urlpatterns = [
     # Local plan/subscription management.
     path('portal/', views.billing_portal, name='portal'),
     path('history/', views.payment_history, name='history'),
+    path(
+    "paypal/create-order/",
+    views.create_paypal_order,
+    name="paypal-create-order",
+),
+
+path(
+    "paypal/capture-order/",
+    views.capture_paypal_order,
+    name="paypal-capture-order",
+),
+
+path(
+    "paypal/success/",
+    views.payment_success,
+    name="paypal-success",
+),
+
+path(
+    "paypal/cancel/",
+    views.payment_cancel,
+    name="paypal-cancel",
+),
 ]
