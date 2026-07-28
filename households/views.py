@@ -12,7 +12,10 @@ from django.views.decorators.http import require_POST
 
 from .forms import HouseholdInviteForm
 from .models import Household, HouseholdInvite, HouseholdMembership, get_household
-
+import resend
+from django.conf import settings
+import resend
+from django.template.loader import render_to_string
 logger = logging.getLogger(__name__)
 
 
@@ -51,73 +54,109 @@ def household_create(request):
 @login_required
 @require_POST
 def household_invite(request):
-    """Invite a family member by email. Equivalent of the requested
-    `invite_family_member` view: verifies an active Family subscription,
-    generates a secure token (via `HouseholdInvite.token`'s
-    `secrets.token_urlsafe` default), saves the invitation, and emails it.
+    """
+    Invite a family member by email.
     """
     household = get_household(request.user)
+
     if not household or not household.is_owner(request.user):
-        messages.error(request, 'Only the household owner can send invites.')
-        return redirect('households:home')
+        messages.error(request, "Only the household owner can send invites.")
+        return redirect("households:home")
+
     if not request.user.profile.is_family:
         messages.error(
             request,
-            'Your Family subscription looks inactive, so invites are paused. '
-            'Check Settings → Plan & Billing.',
+            "Your Family subscription looks inactive, so invites are paused. "
+            "Check Settings → Plan & Billing.",
         )
-        return redirect('households:home')
+        return redirect("households:home")
+
     if not household.can_add_member():
-        messages.error(request, f'This household is already at the {Household.MAX_MEMBERS}-member limit.')
-        return redirect('households:home')
+        messages.error(
+            request,
+            f"This household is already at the {Household.MAX_MEMBERS}-member limit."
+        )
+        return redirect("households:home")
 
-    form = HouseholdInviteForm(request.POST, household=household, invited_by=request.user)
+    form = HouseholdInviteForm(
+        request.POST,
+        household=household,
+        invited_by=request.user
+    )
+
     if not form.is_valid():
-        for error in form.errors.get('email', form.errors.get('__all__', [])):
+        for error in form.errors.get("email", form.errors.get("__all__", [])):
             messages.error(request, error)
-        return redirect('households:home')
+        return redirect("households:home")
 
-    email = form.cleaned_data['email']
+    email = form.cleaned_data["email"]
 
     try:
-        # The DB-level UniqueConstraint (households/migrations/0002) is the
-        # real duplicate guard — the form check above is just a friendlier
-        # error message for the common case; this catches any race where
-        # two invite requests land at nearly the same time.
-        invite = HouseholdInvite.objects.create(household=household, email=email, invited_by=request.user)
+        invite = HouseholdInvite.objects.create(
+            household=household,
+            email=email,
+            invited_by=request.user,
+        )
     except Exception:
-        logger.warning('Duplicate/failed invite create for household_id=%s email=%s', household.id, email)
-        messages.error(request, f'An invite is already pending for {email}.')
-        return redirect('households:home')
+        logger.warning(
+            "Duplicate/failed invite create for household_id=%s email=%s",
+            household.id,
+            email,
+        )
+        messages.error(request, f"An invite is already pending for {email}.")
+        return redirect("households:home")
 
-    accept_url = request.build_absolute_uri(reverse('households:accept_invite', args=[invite.token]))
+    accept_url = request.build_absolute_uri(
+        reverse("households:accept_invite", args=[invite.token])
+    )
+
     context = {
-        'household': household,
-        'inviter': request.user,
-        'accept_url': accept_url,
-        'expiry_days': HouseholdInvite.EXPIRY_DAYS,
+        "household": household,
+        "inviter": request.user,
+        "accept_url": accept_url,
+        "expiry_days": HouseholdInvite.EXPIRY_DAYS,
     }
 
     try:
-        text_body = render_to_string('households/invitation_email.txt', context)
-        html_body = render_to_string('households/invitation_email.html', context)
-        message = EmailMultiAlternatives(
-            subject=f'You’re invited to join {household.name} on MoneyWise',
-            body=text_body,
-            to=[email],
+        html_body = render_to_string(
+            "households/invitation_email.html",
+            context,
         )
-        message.attach_alternative(html_body, 'text/html')
-        message.send(fail_silently=False)
+
+        text_body = f"""
+Hi,
+
+{request.user.get_full_name() or request.user.username} has invited you to join the "{household.name}" family on MoneyWise.
+
+Accept your invitation here:
+
+{accept_url}
+
+This invitation expires in {HouseholdInvite.EXPIRY_DAYS} days.
+
+Thanks,
+MoneyWise Team
+"""
+
+        resend.Emails.send({
+            "from": settings.DEFAULT_FROM_EMAIL,   # or your verified sender
+            "to": [email],
+            "subject": f"You're invited to join {household.name} on MoneyWise",
+            "html": html_body,
+            "text": text_body,
+        })
+
     except Exception:
-        logger.exception('Failed to send household invite email to %s', email)
+        logger.exception("Failed to send household invite email to %s", email)
         invite.delete()
-        messages.error(request, "We couldn't send that invite email. Please try again.")
-        return redirect('households:home')
+        messages.error(
+            request,
+            "We couldn't send that invite email. Please try again."
+        )
+        return redirect("households:home")
 
-    messages.success(request, f'Invite sent to {email}. (Dev mode: check the runserver console for the email.)')
-    return redirect('households:home')
-
-
+    messages.success(request, f"Invite sent to {email}.")
+    return redirect("households:home")
 @login_required
 def household_invite_accept(request, token):
     """Accept a household invite. Equivalent of the requested
