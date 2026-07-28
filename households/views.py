@@ -146,13 +146,11 @@ MoneyWise Team
             "text": text_body,
         })
 
-    except Exception:
-        logger.exception("Failed to send household invite email to %s", email)
+    except Exception as e:
+        print(e)
+        logger.exception(e)
+        messages.error(request, str(e))
         invite.delete()
-        messages.error(
-            request,
-            "We couldn't send that invite email. Please try again."
-        )
         return redirect("households:home")
 
     messages.success(request, f"Invite sent to {email}.")
