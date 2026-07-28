@@ -48,7 +48,9 @@
     <h3>Plan &amp; Billing</h3>
     <p class="empty-hint">
         Current plan: <strong>{{ user.profile.get_plan_display }}</strong>
-        {% if user.profile.has_active_subscription %}
+        {% if user.profile.subscription_status == 'trialing' %}
+            <span class="status-tag status-tag-ok">Free trial</span> — first charge on {{ user.profile.current_period_end|date:"M j, Y" }}
+        {% elif user.profile.has_active_subscription %}
             (renews {{ user.profile.current_period_end|date:"M j, Y" }})
         {% elif user.profile.plan != 'free' %}
             <span class="text-danger">— subscription {{ user.profile.subscription_status|default:"inactive" }}</span>

@@ -44,15 +44,14 @@ class Profile(models.Model):
     reminder_notifications = models.BooleanField(default=True)
 
     # --- Billing / subscription -----------------------------------------
-    # Payments are handled by PayPal (see billing/paypal.py and
-    # billing/views.py) — every paid plan is charged immediately at
-    # checkout, there is no free trial period. The two stripe_* fields are
-    # kept (always blank) so the schema is ready to drop a different
-    # provider back in later without another migration.
+    # No payment processor is used in this build (see billing/views.py) —
+    # "starting a plan" just activates a local free trial. The two
+    # stripe_* fields are kept (always blank) so the schema is ready to
+    # drop a real provider back in later without another migration.
     plan = models.CharField(max_length=10, choices=PLAN_CHOICES, default='free')
     stripe_customer_id = models.CharField(max_length=255, blank=True, default='')
     stripe_subscription_id = models.CharField(max_length=255, blank=True, default='')
-    # 'active' while a paid plan is in good standing, '' once it's ended/never started.
+    # 'trialing' while a free trial is active, '' once it's ended/never started.
     subscription_status = models.CharField(max_length=20, blank=True, default='')
     current_period_end = models.DateTimeField(null=True, blank=True)
 
@@ -69,8 +68,8 @@ class Profile(models.Model):
 
     @property
     def has_active_subscription(self):
-        """True while the paid subscription is in good standing."""
-        return self.plan != 'free' and self.subscription_status == 'active'
+        """True while Stripe confirms the paid subscription is in good standing."""
+        return self.plan != 'free' and self.subscription_status in ('active', 'trialing')
 
     @property
     def is_pro(self):

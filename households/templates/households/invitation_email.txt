@@ -1,0 +1,6 @@
+{{ inviter.get_full_name|default:inviter.username }} invited you to join "{{ household.name }}" on MoneyWise.
+
+Accept the invite here:
+{{ accept_url }}
+
+This link expires in {{ expiry_days }} day{{ expiry_days|pluralize }}. If you weren't expecting this, you can ignore this email.

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<body style="margin:0; padding:0; background:#f4f6f7; font-family:Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f7; padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:12px; overflow:hidden;">
+          <tr>
+            <td style="background:#00acc1; padding:24px 32px;">
+              <span style="color:#ffffff; font-size:20px; font-weight:bold;">MoneyWise</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h2 style="margin:0 0 16px; color:#263238; font-size:20px;">You're invited to a household</h2>
+              <p style="margin:0 0 16px; color:#455a64; font-size:15px; line-height:1.5;">
+                <strong>{{ inviter.get_full_name|default:inviter.username }}</strong> invited you to join
+                <strong>{{ household.name }}</strong> on MoneyWise — share budgets and savings goals together,
+                while keeping your own income and expenses private.
+              </p>
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+                <tr>
+                  <td style="border-radius:8px; background:#00acc1;">
+                    <a href="{{ accept_url }}" target="_blank"
+                       style="display:inline-block; padding:12px 28px; color:#ffffff; text-decoration:none;
+                              font-size:15px; font-weight:bold; border-radius:8px;">
+                      Accept Invitation
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0 0 8px; color:#78909c; font-size:13px;">
+                This link expires in {{ expiry_days }} day{{ expiry_days|pluralize }}.
+              </p>
+              <p style="margin:0; color:#78909c; font-size:13px; word-break:break-all;">
+                Or paste this link into your browser: {{ accept_url }}
+              </p>
+            </td>
+          </tr>
+        </table>
+        <p style="color:#90a4ae; font-size:12px; margin-top:16px;">
+          If you weren't expecting this invite, you can safely ignore this email.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

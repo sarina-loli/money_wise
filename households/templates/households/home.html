@@ -73,13 +73,28 @@
     <p class="empty-hint">This household is at the {{ household.MAX_MEMBERS }}-member limit.</p>
     {% endif %}
 
-    {% if pending_invites %}
-    <h4 style="margin-top:1.5rem;">Pending invites</h4>
-    <ul>
-        {% for inv in pending_invites %}
-        <li>{{ inv.email }} — sent {{ inv.created_at|date:"M j, Y" }}</li>
+    {% if invites %}
+    <h4 style="margin-top:1.5rem;">Invitations</h4>
+    <table class="data-table">
+        <thead><tr><th>Email</th><th>Status</th><th>Sent</th></tr></thead>
+        <tbody>
+        {% for inv in invites %}
+            <tr>
+                <td>{{ inv.email }}</td>
+                <td>
+                    {% if inv.status == 'accepted' %}
+                        <span class="status-tag status-tag-ok">Accepted</span>
+                    {% elif inv.status == 'expired' or inv.is_expired %}
+                        <span class="status-tag status-tag-exceeded">Expired</span>
+                    {% else %}
+                        <span class="status-tag status-tag-warning">Pending</span>
+                    {% endif %}
+                </td>
+                <td>{{ inv.created_at|date:"M j, Y" }}</td>
+            </tr>
         {% endfor %}
-    </ul>
+        </tbody>
+    </table>
     {% endif %}
 </div>
 
