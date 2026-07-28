@@ -139,20 +139,24 @@ MoneyWise Team
 """
 
         resend.Emails.send({
-            "from": settings.DEFAULT_FROM_EMAIL,   # or your verified sender
+            "from": "onboarding@resend.dev",  # or your verified sender
             "to": [email],
             "subject": f"You're invited to join {household.name} on MoneyWise",
             "html": html_body,
             "text": text_body,
         })
 
-    except Exception as e:
-        logger.exception(e)
-        print("RESEND ERROR:", repr(e))
-        messages.error(request, str(e))
+    except Exception:
+        logger.exception("Failed to send household invite email to %s", email)
         invite.delete()
+        messages.error(
+            request,
+            "We couldn't send that invite email. Please try again."
+        )
         return redirect("households:home")
 
+    messages.success(request, f"Invite sent to {email}.")
+    return redirect("households:home")
 @login_required
 def household_invite_accept(request, token):
     """Accept a household invite. Equivalent of the requested
