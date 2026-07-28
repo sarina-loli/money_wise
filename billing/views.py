@@ -1,5 +1,6 @@
 import json
 import logging
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -8,18 +9,13 @@ from django.core.validators import validate_email
 from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
-from . import paypal
+from . import paypal, paypal_service
 from .models import Payment
-from .plans import PLAN_NAMES, PLAN_PRICES_USD
-from billing.paypal_service import PayPalService
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
-import json
+from .plans import PLAN_PRICES_USD
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,96 +32,6 @@ def _absolute_url(request, name, *args):
     return request.build_absolute_uri(reverse(name, args=args))
 
 
-def _apply_successful_payment(payment):
-    """Grant the plan to the user once a payment is confirmed successful.
-    Safe to call more than once (idempotent) — re-applying the same plan
-    to the same profile is a no-op in effect."""
-    profile = payment.user.profile
-    profile.plan = payment.plan
-    profile.subscription_status = 'active'
-    profile.current_period_end = timezone.now() + timezone.timedelta(days=30)
-    profile.save(update_fields=['plan', 'subscription_status', 'current_period_end'])
-    logger.info(
-        'Activated plan=%s for user_id=%s via tx_ref=%s',
-        payment.plan, payment.user_id, payment.tx_ref,
-    )
-
-
-def _capture_and_sync(payment):
-    """Capture the PayPal order for this Payment (this is the call that
-    actually moves the money) and update the local row to match. This is
-    the ONLY place that is allowed to mark a Payment 'success' from a fresh
-    capture — never trust a redirect query string or a webhook body on its
-    own, always confirm with PayPal's API first, per PayPal's own guidance:
-    https://developer.paypal.com/docs/api/webhooks/v1/#verify-webhook-signature
-
-    Returns the (possibly updated) Payment instance. Raises
-    paypal.PayPalError if PayPal could not be reached at all (network/parse
-    failure) — in that case the payment is left as-is (still 'pending') so
-    it can be retried.
-    """
-    data = paypal.capture_order(payment.paypal_order_id)
-    payment.raw_capture_response = data
-    status = (data.get('status') or '').upper()
-
-    if status == 'COMPLETED':
-        payment.status = 'success'
-        payment.paypal_capture_id = paypal.capture_id_from_order(data)
-        payment.verified_at = timezone.now()
-        payment.failure_reason = ''
-        payment.save()
-        _apply_successful_payment(payment)
-        return payment
-
-    # Capture can fail because the order was already captured before (e.g.
-    # the user hit "back" and returned twice, or the webhook beat the
-    # return_url view to it). That's not a real failure — re-fetch the
-    # order itself and trust whatever status PayPal reports for it.
-    details = data.get('details') or []
-    issue = details[0].get('issue') if details else data.get('name')
-    if issue == 'ORDER_ALREADY_CAPTURED':
-        logger.info('Order already captured tx_ref=%s, re-fetching order state.', payment.tx_ref)
-        return _sync_from_order(payment, paypal.get_order(payment.paypal_order_id))
-
-    payment.status = 'failed'
-    payment.failure_reason = (
-        (details[0].get('description') if details else None)
-        or data.get('message')
-        or 'Payment could not be completed.'
-    )
-    payment.save()
-    logger.info('Payment failed tx_ref=%s reason=%s', payment.tx_ref, payment.failure_reason)
-    return payment
-
-
-def _sync_from_order(payment, order_data):
-    """Update a Payment from a GET /v2/checkout/orders/{id} response. Used
-    by the webhook (which never captures money itself, only confirms state)
-    and as a fallback when a capture attempt reports the order was already
-    captured elsewhere. Safe to call more than once (idempotent)."""
-    payment.raw_capture_response = order_data
-    status = (order_data.get('status') or '').upper()
-
-    if status == 'COMPLETED':
-        payment.status = 'success'
-        payment.paypal_capture_id = paypal.capture_id_from_order(order_data) or payment.paypal_capture_id
-        payment.verified_at = timezone.now()
-        payment.failure_reason = ''
-        payment.save()
-        _apply_successful_payment(payment)
-    elif status == 'VOIDED':
-        payment.status = 'failed'
-        payment.failure_reason = 'Payment was voided.'
-        payment.save()
-    else:
-        # CREATED / APPROVED / PAYER_ACTION_REQUIRED — still pending; the
-        # return_url view, a retried webhook, or another verify call will
-        # settle it later.
-        logger.info('PayPal order still pending tx_ref=%s status=%s', payment.tx_ref, status)
-
-    return payment
-
-
 # ---------------------------------------------------------------------------
 # Checkout — start a payment
 # ---------------------------------------------------------------------------
@@ -136,12 +42,16 @@ def create_checkout_session(request, plan):
     """Starts a real PayPal payment for the Pro or Family plan.
 
     Flow:
-      1. Validate the plan and build a Payment(status='pending') row.
-      2. Ask PayPal to create an order (SANDBOX MODE — uses whichever
-         credentials are configured in PAYPAL_CLIENT_ID/SECRET; see
-         .env.example).
+      1. Validate the plan and the user's email.
+      2. Ask PayPal (via `paypal_service.start_checkout`) to create a
+         pending Payment row and a matching PayPal order.
       3. Redirect the user's browser to PayPal's hosted checkout
          ("approve") page.
+
+    All Payment-row bookkeeping, duplicate-checkout prevention, and the
+    actual PayPal API call live in `billing/paypal_service.py` — this view
+    only handles the HTTP request/response and turns errors into a
+    friendly message.
     """
     if plan not in PLAN_PRICES_USD:
         messages.error(request, "That isn't a plan you can subscribe to.")
@@ -167,19 +77,6 @@ def create_checkout_session(request, plan):
         messages.error(request, 'Your account email address looks invalid. Please update it and try again.')
         return redirect('accounts:settings')
 
-    amount = PLAN_PRICES_USD[plan]
-    tx_ref = paypal.generate_tx_ref(prefix=f'mw-{request.user.id}')
-
-    payment = Payment.objects.create(
-        user=request.user,
-        plan=plan,
-        tx_ref=tx_ref,
-        amount=amount,
-        currency='USD',
-        status='pending',
-        email=email,
-    )
-
     return_url = _absolute_url(request, 'billing:payment_return')
     # PayPal sends the browser to cancel_url (unchanged) if the buyer backs
     # out of checkout, and to return_url if they approve. We reuse the same
@@ -188,30 +85,18 @@ def create_checkout_session(request, plan):
     cancel_url = f'{return_url}?cancelled=1'
 
     try:
-        data = paypal.create_order(
-            amount=amount,
-            currency='USD',
-            tx_ref=tx_ref,
-            return_url=return_url,
-            cancel_url=cancel_url,
-            description=f'MoneyWise {PLAN_NAMES.get(plan, plan)} plan subscription',
+        payment = paypal_service.start_checkout(
+            user=request.user, plan=plan, email=email,
+            return_url=return_url, cancel_url=cancel_url,
         )
+    except paypal_service.DuplicateCheckoutError as exc:
+        messages.warning(request, str(exc))
+        return redirect(reverse('core:landing') + '#pricing')
     except paypal.PayPalError as exc:
-        payment.status = 'failed'
-        payment.failure_reason = str(exc)
-        payment.save(update_fields=['status', 'failure_reason', 'updated_at'])
-        logger.warning('Checkout create order failed for user_id=%s tx_ref=%s: %s', request.user.id, tx_ref, exc)
         messages.error(request, f"We couldn't start your payment: {exc}")
         return redirect(reverse('core:landing') + '#pricing')
 
-    approve_url = next((l.get('href') for l in data.get('links', []) if l.get('rel') == 'approve'), '')
-    payment.paypal_order_id = data.get('id', '')
-    payment.checkout_url = approve_url
-    payment.raw_create_response = data
-    payment.save(update_fields=['paypal_order_id', 'checkout_url', 'raw_create_response', 'updated_at'])
-
-    logger.info('Checkout started user_id=%s plan=%s tx_ref=%s order_id=%s', request.user.id, plan, tx_ref, payment.paypal_order_id)
-    return redirect(approve_url)
+    return redirect(payment.checkout_url)
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +114,7 @@ def payment_return(request):
 
     This view is what actually CAPTURES the order (moves the money) — it
     never trusts the querystring alone; capture/verify always goes back to
-    PayPal's API first.
+    PayPal's API first, via `paypal_service.capture_and_sync`.
     """
     token = request.GET.get('token')
     cancelled = request.GET.get('cancelled') == '1'
@@ -252,7 +137,7 @@ def payment_return(request):
 
     if not payment.is_final:
         try:
-            _capture_and_sync(payment)
+            payment = paypal_service.capture_and_sync(payment.pk)
         except paypal.PayPalError as exc:
             logger.error('Could not capture/verify tx_ref=%s on return: %s', payment.tx_ref, exc)
             messages.warning(
@@ -291,8 +176,9 @@ def paypal_webhook(request):
       - The request is authenticated using PayPal's Verify Webhook
         Signature API (needs PAYPAL_WEBHOOK_ID), verified in
         billing/paypal.py:verify_webhook_signature.
-      - Even a validly-signed payload is NOT trusted directly — we still
-        re-fetch the order from PayPal's API before touching the database.
+      - Even a validly-signed payload is NOT trusted directly —
+        `paypal_service.process_webhook_event` re-fetches the order from
+        PayPal's API before touching the database.
       - Processing is idempotent: replays of the same event are safe.
 
     Always returns 200 once the event is acknowledged, so PayPal doesn't
@@ -316,40 +202,10 @@ def paypal_webhook(request):
         logger.warning('Rejected PayPal webhook with unparsable body.')
         return HttpResponseBadRequest('invalid payload')
 
-    event_type = event.get('event_type') or ''
-    resource = event.get('resource') or {}
-
-    if event_type.startswith('CHECKOUT.ORDER'):
-        order_id = resource.get('id')
-    elif event_type.startswith('PAYMENT.CAPTURE'):
-        order_id = ((resource.get('supplementary_data') or {}).get('related_ids') or {}).get('order_id')
-    else:
-        order_id = None
-
-    if not order_id:
-        logger.info('Ignoring PayPal webhook event_type=%s (no order id to act on)', event_type)
-        return JsonResponse({'received': True})
-
     try:
-        payment = Payment.objects.get(paypal_order_id=order_id)
-    except Payment.DoesNotExist:
-        logger.warning('PayPal webhook for unknown order_id=%s', order_id)
-        return JsonResponse({'received': True})
-
-    if payment.is_final:
-        # Already settled (likely via the return_url path) — idempotent no-op.
-        return JsonResponse({'received': True, 'already_processed': True})
-
-    try:
-        if event_type == 'CHECKOUT.ORDER.APPROVED':
-            # The buyer approved but may never come back to our return_url
-            # (closed the tab, etc.) — capture here so the payment doesn't
-            # get stuck pending forever.
-            _capture_and_sync(payment)
-        else:
-            _sync_from_order(payment, paypal.get_order(payment.paypal_order_id))
+        paypal_service.process_webhook_event(event)
     except paypal.PayPalError as exc:
-        logger.error('Webhook capture/verify failed for order_id=%s: %s', order_id, exc)
+        logger.error('Webhook capture/verify failed: %s', exc)
         # 500 so PayPal retries this webhook later.
         return JsonResponse({'received': False, 'error': 'verify_failed'}, status=500)
 
@@ -373,49 +229,6 @@ def billing_portal(request):
     has no recurring-subscription object to cancel server-side for these
     one-off Orders payments, so this simply resets the local plan flag —
     the same behaviour as before payments were wired up."""
-    profile = request.user.profile
-    profile.plan = 'free'
-    profile.subscription_status = ''
-    profile.current_period_end = None
-    profile.save(update_fields=['plan', 'subscription_status', 'current_period_end'])
+    paypal_service.downgrade_to_free(request.user.profile)
     messages.info(request, 'Your plan is back to Free.')
     return redirect('accounts:settings')
-
-@login_required
-@require_POST
-def create_paypal_order(request):
-    data = json.loads(request.body)
-    amount = data.get("amount")
-    response = PayPalService.create_order(amount)
-    return JsonResponse(response)
-
-@login_required
-@require_POST
-def capture_paypal_order(request):
-    data = json.loads(request.body)
-    order_id = data.get("orderID")
-    result = PayPalService.capture_order(order_id)
-    return JsonResponse(result)
-
-@login_required
-def payment_success(request):
-    return render(
-        request,
-        "billing/payment_success.html"
-    )
-@login_required
-def payment_cancel(request):
-    return render(
-        request,
-        "billing/payment_cancel.html"
-    )
-from django.conf import settings
-
-def payment(request):
-    return render(
-        request,
-        "billing/payment.html",
-        {
-            "paypal_client_id": settings.PAYPAL_CLIENT_ID,
-        },
-    )
