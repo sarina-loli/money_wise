@@ -19,7 +19,17 @@ class HouseholdAdmin(admin.ModelAdmin):
 
 @admin.register(HouseholdInvite)
 class HouseholdInviteAdmin(admin.ModelAdmin):
-    list_display = ('email', 'household', 'status', 'invited_by', 'created_at', 'accepted_at')
-    list_filter = ('status',)
-    search_fields = ('email', 'household__name', 'invited_by__username')
+    list_display = (
+        'email',
+        'household',
+        'accepted',
+        'invited_by',
+        'created_at',
+    )
+    list_filter = ('accepted',)
+    search_fields = (
+        'email',
+        'household__name',
+        'invited_by__username',
+    )
     readonly_fields = ('token', 'created_at')
