@@ -37,6 +37,7 @@ NOTIFICATION_TYPES = [
     ('reminder', 'Reminder'),
     ('large_spending', 'Large Spending Alert'),
     ('monthly_summary', 'Monthly Summary'),
+    ('household_invite', 'Household Invitation'),  # NEW
 ]
 
 
@@ -169,6 +170,7 @@ class Notification(models.Model):
     message = models.CharField(max_length=300)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    link_url = models.CharField(max_length=300, blank=True, null=True)  # NEW: optional action link (e.g. invite accept URL)
 
     class Meta:
         ordering = ['-created_at']
@@ -184,4 +186,5 @@ class Notification(models.Model):
             'reminder': '⏰',
             'large_spending': '💸',
             'monthly_summary': '📊',
+            'household_invite': '👪',  # NEW
         }.get(self.type, '🔔')

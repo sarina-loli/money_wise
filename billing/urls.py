@@ -1,38 +1,21 @@
 from django.urls import path
+
 from . import views
 
-app_name = "billing"
+app_name = 'billing'
 
 urlpatterns = [
-    # Existing PayPal Checkout Flow
-    path(
-        "checkout/<str:plan>/",
-        views.create_checkout_session,
-        name="checkout",
-    ),
+    # Start a PayPal payment for a given plan ('pro' or 'family').
+    path('checkout/<str:plan>/', views.create_checkout_session, name='checkout'),
 
-    path(
-        "payment/return/",
-        views.payment_return,
-        name="payment_return",
-    ),
+    # RETURN_URL / CANCEL_URL — user's browser is sent back here after the
+    # PayPal hosted checkout page (approved or cancelled).
+    path('payment/return/', views.payment_return, name='payment_return'),
 
-    path(
-        "webhook/paypal/",
-        views.paypal_webhook,
-        name="paypal_webhook",
-    ),
+    # Webhook — PayPal's server calls this directly.
+    path('webhook/paypal/', views.paypal_webhook, name='paypal_webhook'),
 
-    # Billing
-    path(
-        "portal/",
-        views.billing_portal,
-        name="portal",
-    ),
-
-    path(
-        "history/",
-        views.payment_history,
-        name="history",
-    ),
+    # Local plan/subscription management.
+    path('portal/', views.billing_portal, name='portal'),
+    path('history/', views.payment_history, name='history'),
 ]

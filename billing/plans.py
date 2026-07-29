@@ -6,6 +6,11 @@ landing page (core/views.py) are what actually get sent to PayPal, so there's
 no display-price/charged-price mismatch to worry about.
 """
 
+# How long a started trial lasts before it needs to be renewed/managed.
+# (Kept for reference/back-compat; the PayPal flow below charges immediately
+# rather than starting a trial.)
+TRIAL_DAYS = 30
+
 # Feature limits enforced in finance/views.py. `None` means unlimited.
 SAVINGS_GOAL_LIMITS = {
     'free': 1,

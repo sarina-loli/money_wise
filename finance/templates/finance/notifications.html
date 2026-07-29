@@ -22,6 +22,11 @@
             <strong>{{ n.title }}</strong>
             <p>{{ n.message }}</p>
             <small>{{ n.created_at|timesince }} ago</small>
+            {% if n.link_url %}
+            <div style="margin-top:0.5rem;">
+                <a href="{{ n.link_url }}" class="btn btn-primary btn-sm">Accept Invitation</a>
+            </div>
+            {% endif %}
         </div>
         {% if not n.is_read %}
         <form method="post" action="{% url 'finance:notification_mark_read' n.pk %}">

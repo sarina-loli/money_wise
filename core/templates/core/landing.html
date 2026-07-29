@@ -139,6 +139,7 @@
                 {% if p.highlighted %}<span class="pricing-badge">Most Popular</span>{% endif %}
                 <h3>{{ p.name }}</h3>
                 <div class="pricing-price">${{ p.price }}<small>/{{ p.period }}</small></div>
+                {% if p.trial_note %}<div class="status-tag status-tag-ok" style="margin-bottom:0.75rem;">{{ p.trial_note }}</div>{% endif %}
                 <ul class="pricing-features">
                     {% for feat in p.features %}
                     <li>✓ {{ feat }}</li>

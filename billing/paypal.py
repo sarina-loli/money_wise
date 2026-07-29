@@ -16,22 +16,12 @@ request/response handling. It only knows how to talk to PayPal. Keeping it
 separate makes it easy to unit test and easy to swap out later.
 """
 import logging
-import time
 import uuid
 
 import requests
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
-
-# Transient-failure retry policy for outbound PayPal calls. Only network-
-# level failures and 5xx responses are retried — a 4xx means PayPal
-# rejected the request itself (bad payload, bad auth, etc.) and retrying
-# it verbatim would just fail again. Every retried call below already
-# carries a PayPal-Request-Id (create_order/capture_order) or is naturally
-# idempotent (GET), so retries can't create duplicate orders/captures.
-MAX_ATTEMPTS = 3
-RETRY_BACKOFF_SECONDS = 0.5
 
 # PayPal has two completely separate environments. Sandbox is used for all
 # testing — sandbox "buyer" test accounts pay with fake money and nothing
@@ -67,46 +57,6 @@ def generate_tx_ref(prefix='moneywise'):
     return f'{prefix}-{uuid.uuid4().hex[:24]}'
 
 
-def _request_with_retry(method, url, *, log_context, **kwargs):
-    """`requests.request(method, url, **kwargs)` with retries for transient
-    failures (connection errors, timeouts, 5xx responses). Raises
-    `PayPalError` if every attempt fails; returns the `requests.Response`
-    on the first attempt that gets a response back (regardless of status
-    code — callers still need to inspect 4xx bodies for PayPal's error
-    details, so a 4xx is returned normally, not raised here).
-
-    `log_context` is a short human-readable string (e.g. 'create order
-    tx_ref=...') used to make retry/failure log lines traceable back to
-    the calling operation.
-    """
-    last_exc = None
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        try:
-            response = requests.request(method, url, timeout=REQUEST_TIMEOUT_SECONDS, **kwargs)
-        except requests.RequestException as exc:
-            last_exc = exc
-            logger.warning(
-                'PayPal request failed (attempt %s/%s) for %s: %s', attempt, MAX_ATTEMPTS, log_context, exc,
-            )
-        else:
-            if response.status_code < 500:
-                return response
-            logger.warning(
-                'PayPal request got %s (attempt %s/%s) for %s',
-                response.status_code, attempt, MAX_ATTEMPTS, log_context,
-            )
-            last_exc = None
-
-        if attempt < MAX_ATTEMPTS:
-            time.sleep(RETRY_BACKOFF_SECONDS * attempt)
-
-    if last_exc is not None:
-        logger.exception('PayPal request exhausted retries for %s', log_context, exc_info=last_exc)
-    else:
-        logger.error('PayPal request exhausted retries for %s (repeated 5xx)', log_context)
-    raise PayPalError('Could not reach the payment provider. Please try again.')
-
-
 def _get_access_token():
     """OAuth2 client-credentials token, required on every PayPal REST call.
 
@@ -120,13 +70,17 @@ def _get_access_token():
         logger.error('PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET are not configured.')
         raise PayPalError('Payments are not configured yet. Please try again later.')
 
-    response = _request_with_retry(
-        'POST', f'{_api_base()}/v1/oauth2/token',
-        log_context='oauth token',
-        data={'grant_type': 'client_credentials'},
-        auth=(client_id, client_secret),
-        headers={'Accept': 'application/json', 'Accept-Language': 'en_US'},
-    )
+    try:
+        response = requests.post(
+            f'{_api_base()}/v1/oauth2/token',
+            data={'grant_type': 'client_credentials'},
+            auth=(client_id, client_secret),
+            headers={'Accept': 'application/json', 'Accept-Language': 'en_US'},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+    except requests.RequestException:
+        logger.exception('PayPal OAuth token request failed.')
+        raise PayPalError('Could not reach the payment provider. Please try again.')
 
     try:
         data = response.json()
@@ -179,11 +133,14 @@ def create_order(*, amount, currency, tx_ref, return_url, cancel_url, descriptio
         },
     }
 
-    response = _request_with_retry(
-        'POST', f'{_api_base()}/v2/checkout/orders',
-        log_context=f'create order tx_ref={tx_ref}',
-        json=payload, headers=headers,
-    )
+    try:
+        response = requests.post(
+            f'{_api_base()}/v2/checkout/orders', json=payload, headers=headers,
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+    except requests.RequestException:
+        logger.exception('PayPal create order request failed for tx_ref=%s', tx_ref)
+        raise PayPalError('Could not reach the payment provider. Please try again.')
 
     try:
         data = response.json()
@@ -224,11 +181,14 @@ def capture_order(order_id):
         'PayPal-Request-Id': f'capture-{order_id}',
     }
 
-    response = _request_with_retry(
-        'POST', f'{_api_base()}/v2/checkout/orders/{order_id}/capture',
-        log_context=f'capture order_id={order_id}',
-        headers=headers, json={},
-    )
+    try:
+        response = requests.post(
+            f'{_api_base()}/v2/checkout/orders/{order_id}/capture',
+            headers=headers, timeout=REQUEST_TIMEOUT_SECONDS, json={},
+        )
+    except requests.RequestException:
+        logger.exception('PayPal capture request failed for order_id=%s', order_id)
+        raise PayPalError('Could not reach the payment provider to complete this payment.')
 
     try:
         data = response.json()
@@ -253,11 +213,14 @@ def get_order(order_id):
     token = _get_access_token()
     headers = {'Authorization': f'Bearer {token}'}
 
-    response = _request_with_retry(
-        'GET', f'{_api_base()}/v2/checkout/orders/{order_id}',
-        log_context=f'get order_id={order_id}',
-        headers=headers,
-    )
+    try:
+        response = requests.get(
+            f'{_api_base()}/v2/checkout/orders/{order_id}',
+            headers=headers, timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+    except requests.RequestException:
+        logger.exception('PayPal get order request failed for order_id=%s', order_id)
+        raise PayPalError('Could not reach the payment provider to verify this payment.')
 
     try:
         data = response.json()
