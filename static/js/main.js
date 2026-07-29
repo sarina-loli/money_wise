@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.disabled = true;
       btn.classList.add('is-loading');
       const label = btn.querySelector('.btn-label');
-      if (label) label.textContent = 'Redirecting to Chapa…';
+      if (label) label.textContent = 'Redirecting to PayPal…';
     });
   });
 
